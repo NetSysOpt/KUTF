@@ -4,6 +4,6 @@ pkl
 model
 plots
 predictions
-gen_trian_*
+gen_train_*
 qplib
 qplib*
