@@ -20,9 +20,10 @@ mode = ''
 mode = 'cont201'
 mode = 'qplib8938'
 mode = ''
+mode = 'qplib8602'
 mode = 'qplib8785'
 mode = 'qplib8906'
-# mode = 'qplib8602'
+# mode = 'qplib8845'
 ident = ''
 train_files = os.listdir(train_ori_dir)
 valid_files = os.listdir(valid_ori_dir)
@@ -76,6 +77,22 @@ elif mode == 'qplib8906':
     train_files = os.listdir(train_ori_dir)
     valid_files = os.listdir(valid_ori_dir)
     ident = 'qplib8906'
+elif mode == 'qplib8845':
+    train_tar_dir = '../pkl/8845_train'
+    valid_tar_dir = '../pkl/8845_valid'
+    train_ori_dir = '../ins/gen_train_8845'
+    valid_ori_dir = '../ins/valid'
+    train_files = os.listdir(train_ori_dir)
+    valid_files = os.listdir(valid_ori_dir)
+    ident = 'qplib8845'
+elif mode == 'qplib_9008':
+    train_tar_dir = '../pkl/9008_train'
+    valid_tar_dir = '../pkl/9008_valid'
+    train_ori_dir = '../ins/gen_train_9008'
+    valid_ori_dir = '../ins/valid'
+    train_files = os.listdir(train_ori_dir)
+    valid_files = os.listdir(valid_ori_dir)
+    ident = 'qplib_9008'
 
 if not os.path.exists(train_tar_dir):
     os.mkdir(train_tar_dir)
