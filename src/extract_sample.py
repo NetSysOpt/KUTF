@@ -24,6 +24,10 @@ mode = 'qplib8602'
 mode = 'qplib8785'
 mode = 'qplib8906'
 # mode = 'qplib8845'
+mode = 'qplib9008'
+mode = 'qplib8547'
+
+
 ident = ''
 train_files = os.listdir(train_ori_dir)
 valid_files = os.listdir(valid_ori_dir)
@@ -85,14 +89,22 @@ elif mode == 'qplib8845':
     train_files = os.listdir(train_ori_dir)
     valid_files = os.listdir(valid_ori_dir)
     ident = 'qplib8845'
-elif mode == 'qplib_9008':
+elif mode == 'qplib9008':
     train_tar_dir = '../pkl/9008_train'
     valid_tar_dir = '../pkl/9008_valid'
     train_ori_dir = '../ins/gen_train_9008'
     valid_ori_dir = '../ins/valid'
     train_files = os.listdir(train_ori_dir)
     valid_files = os.listdir(valid_ori_dir)
-    ident = 'qplib_9008'
+    ident = 'qplib9008'
+elif mode == 'qplib8547':
+    train_tar_dir = '../pkl/8547_train'
+    valid_tar_dir = '../pkl/8547_valid'
+    train_ori_dir = '../ins/gen_train_8547'
+    valid_ori_dir = '../ins/valid'
+    train_files = os.listdir(train_ori_dir)
+    valid_files = os.listdir(valid_ori_dir)
+    ident = 'qplib8547'
 
 if not os.path.exists(train_tar_dir):
     os.mkdir(train_tar_dir)
@@ -108,8 +120,11 @@ failed = 0
 with alive_bar(len(train_files),title=f"Generating Training samples") as bar:
     for fnm in train_files:
         try:
+            v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_scaled_sparse(f'{valid_ori_dir}/{fnm}')
+            # v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_unscaled_sparse(f'{valid_ori_dir}/{fnm}')
+
             # v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_scaled(f'{train_ori_dir}/{fnm}')
-            v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_unscaled(f'{train_ori_dir}/{fnm}')
+            # v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_unscaled(f'{train_ori_dir}/{fnm}')
             # v_feat, c_feat, Q, A, c, b, x, y = extract_solfile(f'../ins/train/{fnm}')
             
 
@@ -144,8 +159,12 @@ with alive_bar(len(train_files),title=f"Generating Training samples") as bar:
 with alive_bar(len(valid_files),title=f"Generating Validating samples") as bar:
     for fnm in valid_files:
         try:
+            v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_scaled_sparse(f'{valid_ori_dir}/{fnm}')
+            # v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_unscaled_sparse(f'{valid_ori_dir}/{fnm}')
+
+            
             # v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_scaled(f'{valid_ori_dir}/{fnm}')
-            v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_unscaled(f'{valid_ori_dir}/{fnm}')
+            # v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_unscaled(f'{valid_ori_dir}/{fnm}')
             # v_feat, c_feat, Q, A, c, b, x, y = extract_solfile_scaled(f'../ins/valid/{fnm}')
             # v_feat, c_feat, Q, A, c, b, x, y = extract_solfile(f'../ins/train/{fnm}')
             to_pack = {}

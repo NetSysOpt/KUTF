@@ -124,6 +124,12 @@ with torch.no_grad():
         train_files = os.listdir(train_tar_dir)
         valid_files = os.listdir(valid_tar_dir)
         ident += '_qplib_9008'
+    elif mode == 'qplib_8547':
+        train_tar_dir = '../pkl/8547_train'
+        valid_tar_dir = '../pkl/8547_valid'
+        train_files = os.listdir(train_tar_dir)
+        valid_files = os.listdir(valid_tar_dir)
+        ident += '_qplib_8547'
 
     loss_func = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(m.parameters(), lr=lr1)

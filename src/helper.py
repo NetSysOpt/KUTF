@@ -350,7 +350,7 @@ def extract_solfile_scaled(fnm):
     for line in ff:
         line = line.replace('\n','')
         if line == 'Q':
-            print(line)
+            print(line,'SS')
             mode = 'Q'
             Q = np.zeros((n,n))
             continue
@@ -413,7 +413,6 @@ def extract_solfile_scaled(fnm):
             n = int(line[1])
             vars_ident_l = np.zeros((n,))
             vars_ident_u = np.zeros((n,))
-            print(n,m)
         elif mode == 'Q':
             line = line.split(' ')
             yind = int(line[0])-1
@@ -544,6 +543,236 @@ def extract_solfile_scaled(fnm):
     
     # print(x)
         
+    return v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident
+
+
+
+
+def extract_solfile_scaled_sparse(fnm):
+    # return params
+    v_feat = None
+    c_feat = None
+    Q = None
+    A = None
+    c = None
+    b = None
+    vscale = None
+    cscale = None
+    constscale = None
+
+    var_ub = None
+    var_lb = None
+    vars_ident_l = None
+    vars_ident_u = None
+    cons_ident = None
+
+    fnm = fnm.replace('/ins','/transformed_ins')
+    fnm = fnm.replace('/gen_train_cont','/train')
+    tsp = fnm.split('/')
+    fnm='/'.join([tsp[0],tsp[1],'train',tsp[3]])
+    print(fnm,'!!!!!!!!!!')
+    
+    
+    n=0
+    m=0
+    
+    ff = open(fnm,'r')
+    print('    File Opened!!!!!!!!!!')
+    mode = 'N'
+    counter = 0
+
+    nnz = []
+    Qind = [[],[]]
+    Qval = []
+    Aind = [[],[]]
+    Aval = []
+    for line in ff:
+        line = line.replace('\n','')
+        if line == 'Q':
+            print(line,'SS')
+            mode = 'Q'
+            continue
+        elif line == 'A':
+            print(line)
+            mode = 'A'
+            continue
+        elif line == 'c':
+            print(line)
+            mode = 'c'
+            c = np.zeros((n,))
+            counter = 0
+            continue
+        elif line == 'b':
+            print(line)
+            mode = 'b'
+            b = np.zeros((m,))
+            counter = 0
+            continue
+        elif line == 'vscale':
+            print(line)
+            mode = 'vscale'
+            vscale = np.zeros((n,))
+            counter = 0
+            continue
+        elif line == 'cscale':
+            print(line)
+            mode = 'cscale'
+            cscale = np.zeros((m,))
+            counter = 0
+            continue
+        elif line == 'constscale':
+            print(line)
+            mode = 'constscale'
+            constscale = np.zeros((1,))
+            counter = 0
+            continue
+        elif line == 'l':
+            print(line)
+            mode = 'l'
+            var_lb = np.zeros((n,))
+            counter = 0
+            continue
+        elif line == 'u':
+            print(line)
+            mode = 'u'
+            var_ub = np.zeros((n,))
+            counter = 0
+            continue
+        elif line == 'numEquation':
+            print(line)
+            mode = 'numEquation'
+            cons_ident = np.zeros((m,))
+            continue
+        
+        if mode =='N':
+            line = line.split(' ')
+            m = int(line[0])
+            n = int(line[1])
+            vars_ident_l = np.zeros((n,))
+            vars_ident_u = np.zeros((n,))
+        elif mode == 'Q':
+            line = line.split(' ')
+            yind = int(line[0])-1
+            xind = int(line[1])-1
+            val = float(line[2])
+            Qind[0].append(xind)
+            Qind[1].append(yind)
+            Qval.append(val)
+        elif mode == 'A':
+            line = line.split(' ')
+            yind = int(line[0])-1
+            xind = int(line[1])-1
+            val = float(line[2])
+            # A[xind,yind] = val
+            # nnz.append((xind,yind,val))
+            Aind[0].append(xind)
+            Aind[1].append(yind)
+            Aval.append(val)
+        elif mode == 'c':
+            line = line.split(' ')[0]
+            line = float(line)
+            c[counter] = line
+            counter+=1
+        elif mode == 'b':
+            line = line.split(' ')[0]
+            line = float(line)
+            b[counter] = line
+            counter+=1
+        elif mode == 'vscale':
+            line = line.split(' ')[0]
+            line = float(line)
+            vscale[counter] = line
+            counter+=1
+        elif mode == 'cscale':
+            line = line.split(' ')[0]
+            line = float(line)
+            cscale[counter] = line
+            counter+=1
+        elif mode == 'constscale':
+            line = line.split(' ')[0]
+            line = float(line)
+            constscale[counter] = line
+            counter+=1
+        elif mode == 'l':
+            line = line.split(' ')[0]
+            if 'Inf' in line:
+                counter+=1
+                continue
+            line = float(line)
+            var_lb[counter] = line
+            vars_ident_l[counter] = 1.0
+            counter+=1
+        elif mode == 'u':
+            line = line.split(' ')[0]
+            if 'Inf' in line:
+                counter+=1
+                continue
+            line = float(line)
+            var_ub[counter] = line
+            vars_ident_u[counter] = 1.0
+            counter+=1
+        elif mode == 'numEquation':
+            line = line.split(' ')[0]
+            nneq = int(line)
+            for i in range(nneq,m):
+                cons_ident[i] = 1.0
+
+                     
+    ff.close()    
+    
+    print('!!!!!!!!!!!!!!!!!!!!')
+    # for i in range(A.shape[0]):
+    #     b[i] = -b[i]
+    #     if cons_ident[i] > 0.5:
+    #         for j in range(A.shape[1]):
+    #             A[i,j] = -A[i,j]
+    cons_ident_set = set()
+    for i in range(m):
+        if cons_ident[i] > 0.5:
+            cons_ident_set.add(i)
+    A = torch.sparse_coo_tensor(Aind,Aval,[m,n])
+    Q = torch.sparse_coo_tensor(Qind,Qval,[n,n])
+    # for i in range(A.shape[0]):
+    for i in cons_ident_set:
+        # b[i] = -b[i]
+        b[i] = b[i]
+    # print(A.shape)
+    # for ent in A[:,0]:
+    #     if ent!=0.0:
+    #         print(ent)
+    # quit()
+    #     if cons_ident[i] > 0.5:
+    #         for j in range(A.shape[1]):
+    #             A[i,j] = -A[i,j]
+    
+    v_feat = torch.zeros((n,2))
+    c_feat = torch.zeros((m,3))
+    x = torch.zeros((n,1))
+    y = torch.zeros((m,1))
+
+    log_fnm = fnm.split('.')
+    log_fnm = [x for x in log_fnm if x!=''][0]
+    log_fnm = log_fnm.split('/')[-1]
+    xsol_file = f'../logs/{log_fnm}_primal_scaled.txt'
+    ysol_file = f'../logs/{log_fnm}_dual_scaled.txt'
+
+    if os.path.isfile(xsol_file):
+        ff = open(xsol_file,'r')
+        ll = 0
+        for line in ff:
+            x[ll] = float(line)
+            ll+=1
+        ff.close()
+    
+    if os.path.isfile(ysol_file):
+        ff = open(ysol_file,'r')
+        ll = 0
+        for line in ff:
+            y[ll] = float(line)
+            ll+=1
+        ff.close()
+
+
     return v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident
 
 
@@ -786,6 +1015,241 @@ def extract_solfile_unscaled(fnm):
     # print(x)
         
     return v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident
+
+
+
+def extract_solfile_unscaled_sparse(fnm):
+    # return params
+    v_feat = None
+    c_feat = None
+    Q = None
+    A = None
+    c = None
+    b = None
+    vscale = None
+    cscale = None
+    constscale = None
+
+    var_ub = None
+    var_lb = None
+    vars_ident_l = None
+    vars_ident_u = None
+    cons_ident = None
+
+    print(fnm,'???????????')
+    fnm = fnm.replace('/ins','/ori_ins')
+    fnm = fnm.replace('/gen_train_cont','/train')
+    tsp = fnm.split('/')
+    fnm='/'.join([tsp[0],tsp[1],'train',tsp[3]])
+    print(fnm,'!!!!!!!!!!')
+    
+    n=0
+    m=0
+    
+    ff = open(fnm,'r')
+    print('    File Opened!!!!!!!!!!')
+    mode = 'N'
+    counter = 0
+
+    nnz = []
+    Qind = [[],[]]
+    Qval = []
+    Aind = [[],[]]
+    Aval = []
+    for line in ff:
+        line = line.replace('\n','')
+        if line == 'Q':
+            print(line,'SS')
+            mode = 'Q'
+            continue
+        elif line == 'A':
+            print(line)
+            mode = 'A'
+            continue
+        elif line == 'c':
+            print(line)
+            mode = 'c'
+            c = np.zeros((n,))
+            counter = 0
+            continue
+        elif line == 'b':
+            print(line)
+            mode = 'b'
+            b = np.zeros((m,))
+            counter = 0
+            continue
+        elif line == 'vscale':
+            print(line)
+            mode = 'vscale'
+            vscale = np.zeros((n,))
+            counter = 0
+            continue
+        elif line == 'cscale':
+            print(line)
+            mode = 'cscale'
+            cscale = np.zeros((m,))
+            counter = 0
+            continue
+        elif line == 'constscale':
+            print(line)
+            mode = 'constscale'
+            constscale = np.zeros((1,))
+            counter = 0
+            continue
+        elif line == 'l':
+            print(line)
+            mode = 'l'
+            var_lb = np.zeros((n,))
+            counter = 0
+            continue
+        elif line == 'u':
+            print(line)
+            mode = 'u'
+            var_ub = np.zeros((n,))
+            counter = 0
+            continue
+        elif line == 'numEquation':
+            print(line)
+            mode = 'numEquation'
+            cons_ident = np.zeros((m,))
+            continue
+        
+        if mode =='N':
+            line = line.split(' ')
+            m = int(line[0])
+            n = int(line[1])
+            vars_ident_l = np.zeros((n,))
+            vars_ident_u = np.zeros((n,))
+        elif mode == 'Q':
+            line = line.split(' ')
+            yind = int(line[0])-1
+            xind = int(line[1])-1
+            val = float(line[2])
+            Qind[0].append(xind)
+            Qind[1].append(yind)
+            Qval.append(val)
+        elif mode == 'A':
+            line = line.split(' ')
+            yind = int(line[0])-1
+            xind = int(line[1])-1
+            val = float(line[2])
+            # A[xind,yind] = val
+            # nnz.append((xind,yind,val))
+            Aind[0].append(xind)
+            Aind[1].append(yind)
+            Aval.append(val)
+        elif mode == 'c':
+            line = line.split(' ')[0]
+            line = float(line)
+            c[counter] = line
+            counter+=1
+        elif mode == 'b':
+            line = line.split(' ')[0]
+            line = float(line)
+            b[counter] = line
+            counter+=1
+        elif mode == 'vscale':
+            line = line.split(' ')[0]
+            line = float(line)
+            vscale[counter] = line
+            counter+=1
+        elif mode == 'cscale':
+            line = line.split(' ')[0]
+            line = float(line)
+            cscale[counter] = line
+            counter+=1
+        elif mode == 'constscale':
+            line = line.split(' ')[0]
+            line = float(line)
+            constscale[counter] = line
+            counter+=1
+        elif mode == 'l':
+            line = line.split(' ')[0]
+            if 'Inf' in line:
+                counter+=1
+                continue
+            line = float(line)
+            var_lb[counter] = line
+            vars_ident_l[counter] = 1.0
+            counter+=1
+        elif mode == 'u':
+            line = line.split(' ')[0]
+            if 'Inf' in line:
+                counter+=1
+                continue
+            line = float(line)
+            var_ub[counter] = line
+            vars_ident_u[counter] = 1.0
+            counter+=1
+        elif mode == 'numEquation':
+            line = line.split(' ')[0]
+            nneq = int(line)
+            for i in range(nneq,m):
+                cons_ident[i] = 1.0
+
+                     
+    ff.close()    
+    
+    print('!!!!!!!!!!!!!!!!!!!!')
+    # for i in range(A.shape[0]):
+    #     b[i] = -b[i]
+    #     if cons_ident[i] > 0.5:
+    #         for j in range(A.shape[1]):
+    #             A[i,j] = -A[i,j]
+    cons_ident_set = set()
+    for i in range(m):
+        if cons_ident[i] > 0.5:
+            cons_ident_set.add(i)
+    A = torch.sparse_coo_tensor(Aind,Aval,[m,n])
+    Q = torch.sparse_coo_tensor(Qind,Qval,[n,n])
+    # for i in range(A.shape[0]):
+    for i in cons_ident_set:
+        # b[i] = -b[i]
+        b[i] = b[i]
+    # print(A.shape)
+    # for ent in A[:,0]:
+    #     if ent!=0.0:
+    #         print(ent)
+    # quit()
+    #     if cons_ident[i] > 0.5:
+    #         for j in range(A.shape[1]):
+    #             A[i,j] = -A[i,j]
+    
+    v_feat = torch.zeros((n,2))
+    c_feat = torch.zeros((m,3))
+    x = torch.zeros((n,1))
+    y = torch.zeros((m,1))
+
+    log_fnm = fnm.split('.')
+    log_fnm = [x for x in log_fnm if x!=''][0]
+    log_fnm = log_fnm.split('/')[-1]
+    xsol_file = f'../logs/{log_fnm}_primal.txt'
+    ysol_file = f'../logs/{log_fnm}_dual.txt'
+
+    if os.path.isfile(xsol_file):
+        ff = open(xsol_file,'r')
+        ll = 0
+        for line in ff:
+            x[ll] = float(line)
+            ll+=1
+        ff.close()
+    
+    if os.path.isfile(ysol_file):
+        ff = open(ysol_file,'r')
+        ll = 0
+        for line in ff:
+            y[ll] = float(line)
+            ll+=1
+        ff.close()
+
+
+    return v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident
+
+
+
+
+
+
 
 
 
@@ -1052,9 +1516,9 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
                     optimizer.zero_grad()
                 x_pred,y_pred,scs_all,mult = m(AT,A,Q,b,c,var_feat,con_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub)
                 # print(x_pred)
-                pr_it = scs_all[0].item()
-                du_it = scs_all[1].item()
-                gp_it = scs_all[2].item()
+                pr_it = scs_all[1].item()
+                du_it = scs_all[2].item()
+                gp_it = scs_all[3].item()
 
                 loss = None
                 # pareto front
@@ -1124,7 +1588,7 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
                 # print(f'Auto-regression on {fnm}, iteration {itr} loss:{loss_num}')
 
             if accu_loss:
-                print(f'{fnm}   avg_loss: {round(net_loss.item()/autoregression_iteration,2)}         {round(pr_it,2)}   ---   {round(du_it,2)}   ---   {round(gp_it,2)}')
+                print(f'{fnm}   avg_loss: {round(net_loss.item()/autoregression_iteration,4)}         {round(pr_it,4)}   ---   {round(du_it,4)}   ---   {round(gp_it,4)}')
                 net_loss.backward()
                 if check_grad:
                     for name, param in m.named_parameters():
@@ -1133,7 +1597,7 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
                     quit()
                 optimizer.step()
             else:
-                print(f'{fnm}   avg_loss: {round(loss.item(),2)}        {round(pr_it,2)}   ---   {round(du_it,2)}   ---   {round(gp_it,2)}')
+                print(f'{fnm}   avg_loss: {round(loss.item(),4)}        {round(pr_it,4)}   ---   {round(du_it,4)}   ---   {round(gp_it,4)}')
                 loss.backward()
                 if check_grad:
                     for name, param in m.named_parameters():

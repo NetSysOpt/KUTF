@@ -130,7 +130,8 @@ class PDQP_Net_geq(torch.nn.Module):
 
 
 class PDQP_Net_AR_geq(torch.nn.Module):
-    def __init__(self,x_size,y_size,feat_size,max_k = 20, threshold = 1e-8,nlayer=1, tfype='linf', use_dual=True):
+    def __init__(self,x_size,y_size,feat_size,max_k = 20, threshold = 1e-8,nlayer=1, 
+                 tfype='linf', use_dual=True, eta_opt = 1e+6):
         super(PDQP_Net_AR_geq,self).__init__()
         self.max_k = max_k
         self.threshold = threshold
@@ -138,7 +139,7 @@ class PDQP_Net_AR_geq(torch.nn.Module):
         self.net = PDQP_Net_geq(x_size,y_size,feat_size,nlayer=nlayer)
         self.net.apply(init_weights)
 
-        self.qual_func = relKKT_general(tfype)
+        self.qual_func = relKKT_general(tfype,eta_opt)
             
         self.final_out = proj_x_no_mlp(1)
 
@@ -639,10 +640,10 @@ class proj_x(torch.nn.Module):
             indicator_x_l = indicator_x_l.unsqueeze(-1)
         if indicator_x_u.shape[-1]!=1:
             indicator_x_u = indicator_x_u.unsqueeze(-1)
-        p1 = torch.cat((x,u),-1)
-        xuu = x - indicator_x_u * self.rr(self.lin_1(p1))
-        p2 = torch.cat((xuu,l),-1)
-        x = xuu + indicator_x_l * self.rr(self.lin_2(p2))
+        # p1 = torch.cat((x,u),-1)
+        xuu = x - indicator_x_u * self.rr(self.lin_1(torch.cat((x,u),-1)))
+        # p2 = torch.cat((xuu,l),-1)
+        x = xuu + indicator_x_l * self.rr(self.lin_2(torch.cat((xuu,l),-1)))
 
 
         # u = u.repeat([1,self.feat_size])
@@ -997,6 +998,9 @@ class r_gap(torch.nn.Module):
         # bot_part = 1.0 + torch.max(torch.norm(Q,float('inf')) , torch.max(torch.linalg.vector_norm(c,float('inf')) + torch.linalg.vector_norm(b,float('inf'))))
         # bot_part = torch.tensor(1e+4)
         # torch.linalg.vector_norm(a,float('inf'))
+        
+        
+        
         return top_part/bot_part
         # return top_part
 
@@ -1238,10 +1242,11 @@ class r_dual_general(torch.nn.Module):
         
 class r_gap_general(torch.nn.Module):
     
-    def __init__(self,mode=2):
+    def __init__(self,mode=2,eta_opt=1e+6):
         super(r_gap_general,self).__init__()
         self.mode = mode
         self.act = nn.ReLU()
+        self.eta_opt = eta_opt
         
     def forward(self,Q,A,AT,b,c,x,y, il, iu,l,u):
         
@@ -1256,25 +1261,29 @@ class r_gap_general(torch.nn.Module):
         primal_grad = c.unsqueeze(-1) - ATy + qx
         
         RC = torch.mul(self.act(primal_grad), il) + torch.mul(-self.act(-primal_grad), iu)
-        tm = torch.where(RC>0,l,u)
-        rc_contribution = torch.mul(RC,tm)
+        rc_contribution = torch.mul(RC,torch.where(RC>0,l,u))
         rc_contribution = torch.sum(rc_contribution)
         
         top_part = torch.abs(quad_term + lin_term - vio_term - rc_contribution)
         
         
-        bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term))
-        return top_part/bot_part
+        # bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term))
+        return top_part/self.eta_opt
 
 class relKKT_general(torch.nn.Module):
     
-    def __init__(self,weight=[1.0,1.0,1.0],mode=2):
+    def __init__(self,mode=2,eta_opt = 1e+6):
+        print(f'!!!  relKKT using {mode} norm, with estimated optimum of {eta_opt}  !!!')
         super(relKKT_general,self).__init__()
         if mode == 'linf':
             mode = float('inf')
+        elif '2' in mode:
+            mode = 2
+        elif '1' in mode:
+            mode = 1
         self.rpm = r_primal_general(mode)
         self.rdl = r_dual_general(mode)
-        self.rgp = r_gap_general(mode)
+        self.rgp = r_gap_general(mode,eta_opt)
 
     def forward(self,Q,A,AT,b,c,x,y,Iy, il, iu, l, u):
         t1 = self.rpm(A,b,c,x,Iy, il, iu, l, u)

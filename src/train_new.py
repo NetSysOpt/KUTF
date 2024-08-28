@@ -29,6 +29,7 @@ lr1 = float(config['lr'])
 net_width = int(config['net_width'])
 model_mode = int(config['model_mode'])
 mode = config['mode']
+eta_opt = float(config['eta_opt'])
 
 accum_loss = True
 if int(config['accum_loss'])==0:
@@ -67,7 +68,7 @@ elif model_mode == 1:
     m = PDQP_Net_AR(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,type=type_modef,use_dual=use_dual).to(device)
     ident += '_AR'
 elif model_mode == 2:
-    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual).to(device)
+    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual,eta_opt=eta_opt).to(device)
     ident += '_ARgeq'
 
     
@@ -140,6 +141,12 @@ elif mode == 'qplib_9008':
     train_files = os.listdir(train_tar_dir)
     valid_files = os.listdir(valid_tar_dir)
     ident += '_qplib_9008'
+elif mode == 'qplib_8547':
+    train_tar_dir = '../pkl/8547_train'
+    valid_tar_dir = '../pkl/8547_valid'
+    train_files = os.listdir(train_tar_dir)
+    valid_files = os.listdir(valid_tar_dir)
+    ident += '_qplib_8547'
 
 
 loss_func = torch.nn.MSELoss()
