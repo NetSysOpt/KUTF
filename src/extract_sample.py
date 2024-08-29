@@ -29,8 +29,8 @@ mode = 'qplib8547'
 
 
 ident = ''
-train_files = os.listdir(train_ori_dir)
-valid_files = os.listdir(valid_ori_dir)
+# train_files = os.listdir(train_ori_dir)
+# valid_files = os.listdir(valid_ori_dir)
 
 
 if mode == 'single':

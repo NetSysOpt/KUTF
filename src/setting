@@ -12,19 +12,19 @@
 # accum_loss = 0
 
 
-max_k = 20
-nlayer = 4
-net_width = 256
-lr = 1e-5
-Contu = 1
-choose_weight = 0
-model_mode = 2
-mode = qplib_8906
-usedual = 1
-pareto = 0
-draw = 1
-accum_loss = 0
-eta_opt = 1299111
+# max_k = 20
+# nlayer = 4
+# net_width = 256
+# lr = 1e-5
+# Contu = 1
+# choose_weight = 0
+# model_mode = 2
+# mode = qplib_8906
+# usedual = 1
+# pareto = 0
+# draw = 1
+# accum_loss = 0
+# eta_opt = 1299111
 
 
 
@@ -41,19 +41,19 @@ eta_opt = 1299111
 # draw = 1
 # accum_loss = 0
 
-# max_k = 1
-# nlayer = 4
-# net_width = 64
-# lr = 1e-5
-# Contu = 1
-# choose_weight = 0
-# model_mode = 2
-# mode = qplib_8547
-# usedual = 1
-# pareto = 0
-# draw = 1
-# accum_loss = 0
-# eta_opt = 600
+max_k = 1
+nlayer = 4
+net_width = 128
+lr = 1e-6
+Contu = 1
+choose_weight = 0
+model_mode = 2
+mode = qplib_8547
+usedual = 1
+pareto = 0
+draw = 1
+accum_loss = 0
+eta_opt = 600
 
 # max_k = 20
 # nlayer = 4

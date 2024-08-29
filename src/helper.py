@@ -1637,3 +1637,204 @@ def draw_plot(x=None,y=None,ident=''):
         plt.plot(y)
     plt.title(f'{ident}')
     plt.savefig(f'../plots/plt_{ident}.png')
+
+
+
+
+
+
+
+
+def process_supervised(m,files,epoch,tar_dir,device,optimizer,choose_weight=False,autoregression_iteration=1,training=True,accu_loss = True):
+    if not training:
+        return valid_supervised(m,files,epoch,tar_dir,device,optimizer,autoregression_iteration)
+    else:
+        return train_supervised(m,files,epoch,tar_dir,device,optimizer,choose_weight,autoregression_iteration,accu_loss = accu_loss)
+
+
+
+
+def valid_supervised(m,valid_files,epoch,valid_tar_dir,device,modf,autoregression_iteration):
+
+    loss_func = torch.nn.MSELoss()
+    avg_valid_loss = [0.0]*autoregression_iteration
+    avg_sc = [0.0]*autoregression_iteration
+    avg_scprimal = [0.0]*autoregression_iteration
+    avg_scdual = [0.0]*autoregression_iteration
+    avg_scgap = [0.0]*autoregression_iteration
+    with torch.no_grad():
+        with alive_bar(len(valid_files),title=f"Validating epoch {epoch}") as bar:
+            for fnm in valid_files:
+                f_tar = gzip.open(f'{valid_tar_dir}/{fnm}','rb')
+                to_pack = pickle.load(f_tar)
+                v_feat = to_pack['vf'].to(device)
+                c_feat = to_pack['cf'].to(device)
+                Q = to_pack['Q'].to(device)
+                A = to_pack['A'].to(device)
+                AT = torch.transpose(A,0,1)
+                c = to_pack['c'].to(device)
+                b = to_pack['b'].to(device)
+                x = to_pack['x'].to(device)
+                y = to_pack['y'].to(device)
+                c = torch.unsqueeze(c,-1)
+                b = torch.unsqueeze(b,-1)
+                cons_ident = torch.as_tensor(to_pack['cons_ident'], dtype=torch.float32).to(device)
+                vars_ident_l = torch.as_tensor(to_pack['vars_ident_l'], dtype=torch.float32).to(device)
+                vars_ident_u = torch.as_tensor(to_pack['vars_ident_u'], dtype=torch.float32).to(device)
+                var_lb = torch.as_tensor(to_pack['var_lb'], dtype=torch.float32).to(device)
+                var_ub = torch.as_tensor(to_pack['var_ub'], dtype=torch.float32).to(device)
+                f_tar.close()
+                
+                if cons_ident.shape[-1]!=1:
+                    cons_ident = cons_ident.unsqueeze(-1)
+                if vars_ident_l.shape[-1]!=1:
+                    vars_ident_l = vars_ident_l.unsqueeze(-1)
+                if vars_ident_u.shape[-1]!=1:
+                    vars_ident_u = vars_ident_u.unsqueeze(-1)
+                if var_lb.shape[-1]!=1:
+                    var_lb = var_lb.unsqueeze(-1)
+                if var_ub.shape[-1]!=1:
+                    var_ub = var_ub.unsqueeze(-1)
+                    
+                    
+                v_feat = torch.zeros((v_feat.shape[0],1),dtype=torch.float32).to(device)
+                c_feat = torch.zeros((c_feat.shape[0],1),dtype=torch.float32).to(device)
+
+
+
+                for itr in range(autoregression_iteration):
+                    x_pred,y_pred,scs_all,mult = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub)
+
+                    bqual = b.squeeze(-1).to(device)
+                    cqual = c.squeeze(-1).to(device)
+                    ttloss, prim_res, dual_res, gaps = modf(Q,A,AT,bqual,cqual,x_pred,y_pred,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub)
+                    print(f'primal_res: {prim_res.item()}   dual_res: {dual_res.item()}   gaps: {gaps.item()}')
+                    real_sc = torch.max(prim_res,torch.max(dual_res,gaps))
+                    real_sc_num = real_sc.item()
+                    avg_sc[itr] += real_sc_num
+
+                    avg_scprimal[itr] += prim_res.item()
+                    avg_scdual[itr] += dual_res.item()
+                    avg_scgap[itr] += gaps.item()
+
+                    loss = loss_func(x_pred, x)
+                    loss_num = loss.item()
+                    avg_valid_loss[itr] += loss_num
+
+
+                    v_feat = x_pred.detach().clone()
+                    c_feat = y_pred.detach().clone()
+
+                    
+
+                    print(f'Auto-regression on {fnm}, iteration {itr} loss:{loss_num}     real sc:{real_sc_num}')
+                bar()
+    return avg_valid_loss, avg_sc, avg_scprimal, avg_scdual, avg_scgap
+
+def train_supervised(m,train_files,epoch,train_tar_dir,device,optimizer,choose_weight,autoregression_iteration,accu_loss):
+    avg_train_loss = [0.0]*autoregression_iteration
+
+    loss_func = torch.nn.MSELoss()
+
+    random.shuffle(train_files)
+    with alive_bar(len(train_files),title=f"Training epoch {epoch}") as bar:
+        for fnm in train_files:
+            # input()
+            mems = torch.cuda.memory_allocated()
+            f_tar = gzip.open(f'{train_tar_dir}/{fnm}','rb')
+            to_pack = pickle.load(f_tar)
+            v_feat = to_pack['vf'].to(device)
+            c_feat = to_pack['cf'].to(device)
+            Q = to_pack['Q'].to(device)
+            A = to_pack['A'].to(device)
+            AT = torch.transpose(A,0,1)
+            c = to_pack['c'].to(device)
+            b = to_pack['b'].to(device)
+            x = to_pack['x'].to(device)
+            y = to_pack['y'].to(device)
+            c = torch.unsqueeze(c,-1)
+            b = torch.unsqueeze(b,-1)
+            cons_ident = torch.as_tensor(to_pack['cons_ident'], dtype=torch.float32).to(device)
+            vars_ident_l = torch.as_tensor(to_pack['vars_ident_l'], dtype=torch.float32).to(device)
+            vars_ident_u = torch.as_tensor(to_pack['vars_ident_u'], dtype=torch.float32).to(device)
+            var_lb = torch.as_tensor(to_pack['var_lb'], dtype=torch.float32).to(device)
+            var_ub = torch.as_tensor(to_pack['var_ub'], dtype=torch.float32).to(device)
+            f_tar.close()
+            
+            if cons_ident.shape[-1]!=1:
+                cons_ident = cons_ident.unsqueeze(-1)
+            if vars_ident_l.shape[-1]!=1:
+                vars_ident_l = vars_ident_l.unsqueeze(-1)
+            if vars_ident_u.shape[-1]!=1:
+                vars_ident_u = vars_ident_u.unsqueeze(-1)
+            if var_lb.shape[-1]!=1:
+                var_lb = var_lb.unsqueeze(-1)
+            if var_ub.shape[-1]!=1:
+                var_ub = var_ub.unsqueeze(-1)
+
+            
+            # in this version, use all 0 start
+            var_feat = torch.zeros((v_feat.shape[0],1),dtype=torch.float32).to(device)
+            con_feat = torch.zeros((c_feat.shape[0],1),dtype=torch.float32).to(device)
+            
+            
+            if accu_loss:
+                net_loss = None
+                optimizer.zero_grad()
+
+            for itr in range(autoregression_iteration):
+                if not accu_loss:
+                    optimizer.zero_grad()
+                x_pred,y_pred,scs_all,mult = m(AT,A,Q,b,c,var_feat,con_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub)
+                # print(x_pred)
+                pr_it = scs_all[1].item()
+                du_it = scs_all[2].item()
+                gp_it = scs_all[3].item()
+                loss = loss_func(x_pred, x)
+
+                loss_num = loss.item()
+                avg_train_loss[itr] += loss_num
+
+                
+                if choose_weight:
+                    print(x_pred)
+                    print(x)
+                    print(y_pred)
+                    print(y)
+                    input('wait')
+
+                if accu_loss:
+                    if net_loss is None:
+                        net_loss = loss
+                    else:
+                        net_loss = net_loss+loss
+                # else:
+                #     loss.backward()
+                #     # optimizer.step()
+
+                var_feat = x_pred.detach().clone()
+                con_feat = y_pred.detach().clone()
+
+
+            if accu_loss:
+                print(f'{fnm}   avg_loss: {round(net_loss.item()/autoregression_iteration,4)}         {round(pr_it,4)}   ---   {round(du_it,4)}   ---   {round(gp_it,4)}')
+                net_loss.backward()
+                if check_grad:
+                    for name, param in m.named_parameters():
+                        print(param.grad,name)
+                        input()
+                    quit()
+                optimizer.step()
+            else:
+                print(f'{fnm}   avg_loss: {round(loss.item(),4)}        {round(pr_it,4)}   ---   {round(du_it,4)}   ---   {round(gp_it,4)}')
+                loss.backward()
+                if check_grad:
+                    for name, param in m.named_parameters():
+                        print(param.grad,name)
+                        input()
+                    quit()
+                optimizer.step()
+
+            bar()
+
+    return avg_train_loss

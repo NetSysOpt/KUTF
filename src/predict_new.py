@@ -5,7 +5,9 @@ import gzip
 import os
 from alive_progress import alive_bar
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+dev = 1
+device = torch.device(f"cuda:{dev}" if torch.cuda.is_available() else "cpu")
 # max_k = 100
 # m = PDQP_Net_AR(1,1,64,max_k = max_k, threshold = 1e-4,nlayer=1).to(device)
 # max_k = 20
