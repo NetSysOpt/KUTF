@@ -574,8 +574,8 @@ def gen_8906(pert_range=0.1, ori_ins = '../qplib_qps/QPLIB_8906.mps', indx = 0):
     fout.close()
 
 
-def pert_ins(pert_range=0.1, ori_ins = '../qplib_qps/QPLIB_8547.mps', indx = 0, 
-                identifier ='8547',
+def pert_ins(pert_range=0.1, ori_ins = '../qplib_qps/QPLIB_8906.mps', indx = 0, 
+                identifier ='8906',
                 per_Q = True,
                 per_c = True,
                 per_A = False,
@@ -709,7 +709,7 @@ def pert_ins(pert_range=0.1, ori_ins = '../qplib_qps/QPLIB_8547.mps', indx = 0,
 
 
 
-for i in range(100):
+for i in range(1):
     # gen_cont_uniform_pert(indx = i)
     # gen_8938(indx = i)
 
@@ -717,4 +717,5 @@ for i in range(100):
     # gen_8602(indx = i)
     # gen_8906(indx = i)
     # gen_8785(indx = i)
-    pert_ins(indx=i)
+    # pert_ins(indx=i,ori_ins = '../qplib_qps/QPLIB_8785.mps',identifier ='8785',)
+    pert_ins(pert_range=0,indx=i,ori_ins = '../qplib_qps/twod.mps',identifier ='twod',)

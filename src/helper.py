@@ -733,9 +733,9 @@ def extract_solfile_scaled_sparse(fnm):
     A = torch.sparse_coo_tensor(Aind,Aval,[m,n])
     Q = torch.sparse_coo_tensor(Qind,Qval,[n,n])
     # for i in range(A.shape[0]):
-    for i in cons_ident_set:
+    # for i in cons_ident_set:
         # b[i] = -b[i]
-        b[i] = b[i]
+        # b[i] = b[i]
     # print(A.shape)
     # for ent in A[:,0]:
     #     if ent!=0.0:
@@ -1298,7 +1298,17 @@ def valid(m,valid_files,epoch,valid_tar_dir,pareto,device,modf,autoregression_it
                 b = to_pack['b'].to(device)
                 c = torch.unsqueeze(c,-1)
                 b = torch.unsqueeze(b,-1)
-                # AT = torch.transpose(A,0,1)
+
+                Q_ori = to_pack['Q_ori'].to(device)
+                A_ori = to_pack['A_ori'].to(device)
+                AT_ori = torch.transpose(A,0,1)
+                c_ori = to_pack['c_ori'].to(device)
+                b_ori = to_pack['b_ori'].to(device)
+                c_ori = torch.unsqueeze(c_ori,-1)
+                b_ori = torch.unsqueeze(b_ori,-1)
+                var_lb_ori = torch.as_tensor(to_pack['var_lb_ori'], dtype=torch.float32).to(device)
+                var_ub_ori = torch.as_tensor(to_pack['var_ub_ori'], dtype=torch.float32).to(device)
+
                 vscale = torch.as_tensor(to_pack['vscale']).to(device).unsqueeze(-1)
                 cscale = torch.as_tensor(to_pack['cscale'] ).to(device).unsqueeze(-1)
                 constscale = torch.as_tensor(to_pack['constscale']).to(device).unsqueeze(-1)
@@ -1319,6 +1329,10 @@ def valid(m,valid_files,epoch,valid_tar_dir,pareto,device,modf,autoregression_it
                     var_lb = var_lb.unsqueeze(-1)
                 if var_ub.shape[-1]!=1:
                     var_ub = var_ub.unsqueeze(-1)
+                if var_lb_ori.shape[-1]!=1:
+                    var_lb_ori = var_lb_ori.unsqueeze(-1)
+                if var_ub_ori.shape[-1]!=1:
+                    var_ub_ori = var_ub_ori.unsqueeze(-1)
                     
                     
                 v_feat = torch.zeros((v_feat.shape[0],1),dtype=torch.float32).to(device)
@@ -1327,16 +1341,17 @@ def valid(m,valid_files,epoch,valid_tar_dir,pareto,device,modf,autoregression_it
 
 
                 for itr in range(autoregression_iteration):
-                    x_pred,y_pred,scs_all,mult = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub)
+                    x_pred,y_pred,scs_all,mult = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub, 
+                                                   AT_ori,A_ori,Q_ori,b_ori,c_ori,vscale,cscale,constscale,var_lb_ori,var_ub_ori)
 
                     if type(scs_all) == type((1,2)):
                         scs = scs_all[0]
                     else:
                         scs = scs_all
 
-                    bqual = b.squeeze(-1).to(device)
-                    cqual = c.squeeze(-1).to(device)
-                    ttloss, prim_res, dual_res, gaps = modf(Q,A,AT,bqual,cqual,x_pred,y_pred,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub)
+                    bqual_ori = b_ori.squeeze(-1).to(device)
+                    cqual_ori = c_ori.squeeze(-1).to(device)
+                    ttloss, prim_res, dual_res, gaps = modf(Q_ori,A_ori,AT_ori,bqual_ori,cqual_ori,x_pred,y_pred,cons_ident,vars_ident_l,vars_ident_u,var_lb_ori,var_ub_ori, vscale,cscale,constscale)
                     print(f'primal_res: {prim_res.item()}   dual_res: {dual_res.item()}   gaps: {gaps.item()}')
                     real_sc = torch.max(prim_res,torch.max(dual_res,gaps))
                     real_sc_num = real_sc.item()
@@ -1399,6 +1414,17 @@ def inference(m,fnm,epoch,valid_tar_dir,pareto,device,modf,autoregression_iterat
     y = to_pack['y'].to(device)
     c = torch.unsqueeze(c,-1)
     b = torch.unsqueeze(b,-1)
+
+    Q_ori = to_pack['Q_ori'].to(device)
+    A_ori = to_pack['A_ori'].to(device)
+    AT_ori = torch.transpose(A,0,1)
+    c_ori = to_pack['c_ori'].to(device)
+    b_ori = to_pack['b_ori'].to(device)
+    c_ori = torch.unsqueeze(c_ori,-1)
+    b_ori = torch.unsqueeze(b_ori,-1)
+    var_lb_ori = torch.as_tensor(to_pack['var_lb_ori'], dtype=torch.float32).to(device)
+    var_ub_ori = torch.as_tensor(to_pack['var_ub_ori'], dtype=torch.float32).to(device)
+
     vscale = torch.as_tensor(to_pack['vscale']).to(device).unsqueeze(-1)
     cscale = torch.as_tensor(to_pack['cscale'] ).to(device).unsqueeze(-1)
     constscale = torch.as_tensor(to_pack['constscale']).to(device).unsqueeze(-1)
@@ -1418,6 +1444,10 @@ def inference(m,fnm,epoch,valid_tar_dir,pareto,device,modf,autoregression_iterat
         var_lb = var_lb.unsqueeze(-1)
     if var_ub.shape[-1]!=1:
         var_ub = var_ub.unsqueeze(-1)
+    if var_lb_ori.shape[-1]!=1:
+        var_lb_ori = var_lb_ori.unsqueeze(-1)
+    if var_ub_ori.shape[-1]!=1:
+        var_ub_ori = var_ub_ori.unsqueeze(-1)
     # in this version, use all 0 start
     v_feat = torch.zeros((v_feat.shape[0],1),dtype=torch.float32).to(device)
     c_feat = torch.zeros((c_feat.shape[0],1),dtype=torch.float32).to(device)
@@ -1425,15 +1455,22 @@ def inference(m,fnm,epoch,valid_tar_dir,pareto,device,modf,autoregression_iterat
         
 
     for itr in range(autoregression_iteration):
-        x_pred,y_pred,scs,mult = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub)
+        x_pred,y_pred,scs,mult = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
+                                                   AT_ori,A_ori,Q_ori,b_ori,c_ori,vscale,cscale,constscale,var_lb_ori,var_ub_ori)
 
         bqual = b.squeeze(-1)
         cqual = c.squeeze(-1)
 
-        ttloss, prim_res, dual_res, gaps = modf(Q,A,AT,bqual,cqual,x_pred,y_pred,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub)
+        bqual_ori = b_ori.squeeze(-1).to(device)
+        cqual_ori = c_ori.squeeze(-1).to(device)
+
+        # ttloss, prim_res, dual_res, gaps = modf(Q,A,AT,bqual,cqual,x_pred,y_pred,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
+        #                                            AT_ori,A_ori,Q_ori,b_ori,c_ori,vscale,cscale,constscale,var_lb_ori,var_ub_ori)
+        ttloss, prim_res, dual_res, gaps = modf(Q_ori,A_ori,AT_ori,bqual_ori,cqual_ori,x_pred,y_pred,cons_ident,vars_ident_l,vars_ident_u,var_lb_ori,var_ub_ori, vscale,cscale,constscale)
         print(fnm) 
         print(f'primal_res: {prim_res.item()}   dual_res: {dual_res.item()}   gaps: {gaps.item()}')
-        print(f'    l2 norm err: {torch.norm(x_pred-x,2)} \n\n')
+        azv = torch.zeros(x_pred.shape).to(device)
+        print(f'    l2 norm err: {torch.norm(x_pred-x,2)}      0\'s l2 norm err: {torch.norm(azv-x,2)}\n\n')
 
         v_feat = x_pred.detach().clone()
         c_feat = y_pred.detach().clone()
@@ -1480,6 +1517,20 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
             b = to_pack['b'].to(device)
             c = torch.unsqueeze(c,-1)
             b = torch.unsqueeze(b,-1)
+
+
+
+            Q_ori = to_pack['Q_ori'].to(device)
+            A_ori = to_pack['A_ori'].to(device)
+            AT_ori = torch.transpose(A,0,1)
+            c_ori = to_pack['c_ori'].to(device)
+            b_ori = to_pack['b_ori'].to(device)
+            c_ori = torch.unsqueeze(c_ori,-1)
+            b_ori = torch.unsqueeze(b_ori,-1)
+            var_lb_ori = torch.as_tensor(to_pack['var_lb_ori'], dtype=torch.float32).to(device)
+            var_ub_ori = torch.as_tensor(to_pack['var_ub_ori'], dtype=torch.float32).to(device)
+
+
             vscale = torch.as_tensor(to_pack['vscale']).to(device).unsqueeze(-1)
             cscale = torch.as_tensor(to_pack['cscale'] ).to(device).unsqueeze(-1)
             constscale = torch.as_tensor(to_pack['constscale']).to(device).unsqueeze(-1)
@@ -1500,6 +1551,10 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
                 var_lb = var_lb.unsqueeze(-1)
             if var_ub.shape[-1]!=1:
                 var_ub = var_ub.unsqueeze(-1)
+            if var_lb_ori.shape[-1]!=1:
+                var_lb_ori = var_lb_ori.unsqueeze(-1)
+            if var_ub_ori.shape[-1]!=1:
+                var_ub_ori = var_ub_ori.unsqueeze(-1)
 
             
             # in this version, use all 0 start
@@ -1514,7 +1569,8 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
             for itr in range(autoregression_iteration):
                 if not accu_loss:
                     optimizer.zero_grad()
-                x_pred,y_pred,scs_all,mult = m(AT,A,Q,b,c,var_feat,con_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub)
+                x_pred,y_pred,scs_all,mult = m(AT,A,Q,b,c,var_feat,con_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
+                                                   AT_ori,A_ori,Q_ori,b_ori,c_ori,vscale,cscale,constscale,var_lb_ori,var_ub_ori)
                 # print(x_pred)
                 pr_it = scs_all[1].item()
                 du_it = scs_all[2].item()
@@ -1573,9 +1629,9 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
 
                 if accu_loss:
                     if net_loss is None:
-                        net_loss = loss
+                        net_loss = loss*((itr+1)/autoregression_iteration)
                     else:
-                        net_loss = net_loss+loss
+                        net_loss = net_loss+loss*((itr+1)/autoregression_iteration)
                 # else:
                 #     loss.backward()
                 #     # optimizer.step()
@@ -1637,8 +1693,6 @@ def draw_plot(x=None,y=None,ident=''):
         plt.plot(y)
     plt.title(f'{ident}')
     plt.savefig(f'../plots/plt_{ident}.png')
-
-
 
 
 

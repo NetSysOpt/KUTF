@@ -147,6 +147,19 @@ elif mode == 'qplib_8547':
     train_files = os.listdir(train_tar_dir)
     valid_files = os.listdir(valid_tar_dir)
     ident += '_qplib_8547'
+else:
+    mode1 = mode.replace('qplib_','')
+    train_tar_dir = f'../pkl/{mode1}_train'
+    valid_tar_dir = f'../pkl/{mode1}_valid'
+    train_files = os.listdir(train_tar_dir)
+    valid_files = os.listdir(valid_tar_dir)
+    if len(valid_files) == 0:
+        valid_files.append(train_files[0])
+        valid_tar_dir = train_tar_dir
+    if len(train_files) ==1:
+        for i in range(100):
+            train_files.append(train_files[0])
+    ident += '_{mode}'
 
 
 loss_func = torch.nn.MSELoss()

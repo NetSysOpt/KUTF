@@ -43,7 +43,7 @@ if int(config['usedual']) == 0:
 # m = PDQP_Net_AR(1,1,128,max_k = max_k, threshold = 1e-8,nlayer=8).to(device)
 m = None
 
-ident = f'k{max_k}_{nlayer}'
+ident = f'k{max_k}_{nlayer}_supervised'
 
 if model_mode == 0:
     m = PDQP_Net_shared(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,type='linf').to(device)
@@ -130,19 +130,6 @@ with torch.no_grad():
         train_files = os.listdir(train_tar_dir)
         valid_files = os.listdir(valid_tar_dir)
         ident += '_qplib_8547'
-    else:
-        mode1 = mode.replace('qplib_','')
-        train_tar_dir = f'../pkl/{mode1}_train'
-        valid_tar_dir = f'../pkl/{mode1}_valid'
-        train_files = os.listdir(train_tar_dir)
-        valid_files = os.listdir(valid_tar_dir)
-        if len(valid_files) == 0:
-            valid_files.append(train_files[0])
-            valid_tar_dir = train_tar_dir
-        if len(train_files) ==1:
-            for i in range(100):
-                train_files.append(train_files[0])
-        ident += '_{mode}'
 
     loss_func = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(m.parameters(), lr=lr1)
