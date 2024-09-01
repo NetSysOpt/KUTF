@@ -8,7 +8,10 @@ import random
 
 # torch.backends.cudnn.enabled=False
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu")
+r = torch.cuda.mem_get_info(device)
+device = torch.device(f"cuda:1" if torch.cuda.is_available() else "cpu")
+r = torch.cuda.mem_get_info(device)
 # device = torch.device("cpu")
 # create model
 # m = PDQP_Net_new(2,3,128).to(device)

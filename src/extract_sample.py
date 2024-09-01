@@ -24,14 +24,14 @@ mode = 'qplib8602'
 # mode = 'qplib8845'
 mode = 'qplib9008'
 
-mode = 'qplib8906'
 mode = 'qplib8602'
 
 
 
 mode = 'qplib8547'
-mode = 'qplib8785'
 mode = 'twod'
+mode = 'qplib8785'
+mode = 'qplib8906'
 ident = ''
 train_files = os.listdir(train_ori_dir)
 valid_files = os.listdir(valid_ori_dir)
@@ -118,6 +118,20 @@ else:
     train_files = os.listdir(train_ori_dir)
     valid_files = os.listdir(valid_ori_dir)
 
+if 'qplib' in mode:
+    flitt = set(os.listdir('/home/lxyang/git/pdqpnet/transformed_ins/train'))
+    for ff in train_files:
+        pdd = f'/home/lxyang/git/pdqpnet/transformed_ins/train/{ff}'
+        if ff not in flitt:
+            print(f'file missing: {ff}')
+
+    
+cont = input("Proceed? (y/N)")
+if not ('1' in cont or 'Y' in cont or 'y' in cont):
+    quit()
+    
+
+
 
 if not os.path.exists(train_tar_dir):
     os.mkdir(train_tar_dir)
@@ -129,6 +143,8 @@ print(f'Cleaning {len(old_files)} old training files')
 for fi in old_files:
     os.remove(f"{train_tar_dir}/{fi}")
 failed = 0
+
+
 
 with alive_bar(len(train_files),title=f"Generating Training samples") as bar:
     for fnm in train_files:

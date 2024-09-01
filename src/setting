@@ -1,138 +1,44 @@
-# max_k = 40
+# max_k = 2
 # nlayer = 4
 # net_width = 128
 # lr = 1e-5
 # Contu = 1
 # choose_weight = 0
-# model_mode = 1
-# mode = qplib_8906
-# usedual = 1
-# pareto = 0
-# draw = 1
-# accum_loss = 0
-
-
-# max_k = 8
-# nlayer = 4
-# net_width = 256
-# lr = 1e-5
-# Contu = 0
-# choose_weight = 0
 # model_mode = 2
-# mode = qplib_8906
-# usedual = 1
-# pareto = 0
-# draw = 1
-# accum_loss = 1
-# eta_opt = 1299111
-
-
-
-# max_k = 2
-# nlayer = 4
-# net_width = 64
-# lr = 1e-5
-# Contu = 0
-# choose_weight = 0
-# model_mode = 2
-# mode = qplib_9008
-# usedual = 1
-# pareto = 0
-# draw = 1
-# accum_loss = 0
-
-# max_k = 1
-# nlayer = 4
-# net_width = 128
-# lr = 1e-5
-# Contu = 0
-# choose_weight = 0
-# model_mode = 2
-# mode = qplib_8547
+# mode = twod
 # usedual = 1
 # pareto = 0
 # draw = 1
 # accum_loss = 1
 # eta_opt = 600
+# inf_time = 10
 
+# max_k = 10
+# nlayer = 4
+# net_width = 512
+# lr = 1e-4
+# Contu = 0
+# choose_weight = 0
+# model_mode = 2
+# mode = qplib_8785
+# usedual = 1
+# pareto = 0
+# draw = 1
+# accum_loss = 1
+# eta_opt = 600
+# inf_time = 10
 
-
-max_k = 2
+max_k = 10
 nlayer = 4
-net_width = 128
-lr = 1e-5
-Contu = 1
+net_width = 512
+lr = 1e-4
+Contu = 0
 choose_weight = 0
 model_mode = 2
-mode = twod
+mode = qplib_8906
 usedual = 1
 pareto = 0
 draw = 1
 accum_loss = 1
 eta_opt = 600
 inf_time = 10
-
-# max_k = 20
-# nlayer = 4
-# net_width = 128
-# lr = 1e-6
-# Contu = 1
-# choose_weight = 0
-# model_mode = 1
-# mode = qplib_8785
-# usedual = 1
-# pareto = 0
-# draw = 1
-# accum_loss = 0
-
-
-# max_k = 12
-# nlayer = 4
-# net_width = 256
-# lr = 1e-5
-# Contu = 0
-# choose_weight = 0
-# model_mode = 1
-# mode = qplib_8602
-# usedual = 1
-# pareto = 0
-# draw = 1
-# accum_loss = 0
-
-
-
-
-
-
-# max_k = 12
-# nlayer = 4
-# net_width = 256
-# lr = 1e-5
-# Contu = 0
-# choose_weight = 0
-# model_mode = 2
-# mode = qplib_8845
-# usedual = 1
-# pareto = 0
-# draw = 1
-# accum_loss = 0
-
-# max_k = 1
-# nlayer = 4
-# net_width = 128
-# lr = 1e-6
-# Contu = 1
-# choose_weight = 0
-# model_mode = 1
-# mode = qplib_8785
-# usedual = 0
-
-
-# max_k = 10
-# nlayer = 4
-# net_width = 64
-# lr = 1e-8
-# Contu = 1
-# choose_weight = 0
-# model_mode = 1
-# mode = qplib_8938

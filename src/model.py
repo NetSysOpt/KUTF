@@ -1271,6 +1271,7 @@ class r_gap_general(torch.nn.Module):
         ATy = torch.sparse.mm(AT,y) 
         primal_grad = c.unsqueeze(-1) - ATy + qx
         
+        
         RC = torch.mul(self.act(primal_grad), il) + torch.mul(-self.act(-primal_grad), iu)
         rc_contribution = torch.where(RC>0,l,u)
         # for i in range(rc_contribution.shape[0]):
@@ -1287,6 +1288,27 @@ class r_gap_general(torch.nn.Module):
         # bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term))
         bot_part = 1.0 + torch.norm(Q,self.mode)
         return top_part/bot_part
+    
+
+
+
+
+
+
+        
+class r_CS_general(torch.nn.Module):
+    
+    def __init__(self,mode=2,eta_opt=1e+6):
+        super(r_CS_general,self).__init__()
+        self.mode = mode
+        self.act = nn.ReLU()
+        self.eta_opt = eta_opt
+        
+    def forward(self,Q,A,AT,b,c,x,y, il, iu,l,u):
+        
+        Axb = torch.sparse.mm(A,x)- b.unsqueeze(-1)
+        return torch.norm(torch.mul(y,Axb),1)
+
 
 class relKKT_general(torch.nn.Module):
     
@@ -1301,10 +1323,11 @@ class relKKT_general(torch.nn.Module):
             mode = 1
         self.rpm = r_primal_general(mode)
         self.rdl = r_dual_general(mode)
-        self.rgp = r_gap_general(mode,eta_opt)
+        # self.rgp = r_gap_general(mode,eta_opt)
+        self.rgp = r_CS_general(mode,eta_opt)
+        
 
     def forward(self,Q,A,AT,b,c,x,y,Iy, il, iu, l, u, vscale,cscale,cons_scale):
-
         
         # # Unscale iterates. 
         # x = x./variable_rescaling
