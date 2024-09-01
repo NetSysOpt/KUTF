@@ -74,7 +74,7 @@ class inner_loop_geq(torch.nn.Module):
         # need to check if we want to wrap this with a linear layer
         #       current setting seems better for the theoretical part
         #  !Y update
-        x_delta = self.emu_theta*(x_new - x) + x
+        x_delta = self.emu_theta*(x_new - x) + x_new
         x_delta = self.emu_gamma * (bmat - self.lin_1(torch.matmul(A,x_delta))  )
         y_new = self.yproj(y + x_delta, indicator_y)
 
@@ -1283,7 +1283,9 @@ class r_gap_general(torch.nn.Module):
         top_part = torch.abs(quad_term + lin_term - vio_term - rc_contribution)
         # return top_part/self.eta_opt
         
-        bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term))
+
+        # bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term))
+        bot_part = 1.0 + torch.norm(Q,self.mode)
         return top_part/bot_part
 
 class relKKT_general(torch.nn.Module):

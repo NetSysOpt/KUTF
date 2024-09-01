@@ -70,6 +70,7 @@ pareto = 0
 draw = 1
 accum_loss = 1
 eta_opt = 600
+inf_time = 10
 
 # max_k = 20
 # nlayer = 4

@@ -58,8 +58,8 @@ m = None
 
 ident = f'k{max_k}_{nlayer}'
 
-# type_modef = 'linf'
-type_modef = 'l2'
+type_modef = 'linf'
+# type_modef = 'l2'
 
 
 if model_mode == 0:
@@ -157,7 +157,7 @@ else:
         valid_files.append(train_files[0])
         valid_tar_dir = train_tar_dir
     if len(train_files) ==1:
-        for i in range(100):
+        for i in range(20):
             train_files.append(train_files[0])
     ident += '_{mode}'
 

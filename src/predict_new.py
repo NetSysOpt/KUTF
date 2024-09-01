@@ -5,7 +5,7 @@ import gzip
 import os
 from alive_progress import alive_bar
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 # max_k = 100
 # m = PDQP_Net_AR(1,1,64,max_k = max_k, threshold = 1e-4,nlayer=1).to(device)
 # max_k = 20
@@ -27,6 +27,11 @@ use_dual = True
 accum_loss = True
 if int(config['accum_loss'])==0:
     accum_loss = False
+
+
+inf_time = max_k
+if 'inf_time' in config:
+    inf_time = int(config['inf_time'])
 
 
 pareto = True
@@ -164,7 +169,7 @@ with torch.no_grad():
 
     with alive_bar(len(valid_files),title=f"Validating part") as bar:
         for fnm in valid_files:
-            inference(m,fnm,last_epoch,valid_tar_dir,pareto,device,modf,max_k)
+            inference(m,fnm,last_epoch,valid_tar_dir,pareto,device,modf,inf_time)
             bar()
 
         
