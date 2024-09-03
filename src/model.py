@@ -20,15 +20,23 @@ def compute_weight_grad(model):
                 k=k+1
     return torch.tensor(z)
 
+        
+def divide_weights(model,div=4.0,div_bias=True):
+    params = model.named_parameters()
+    for name,parm in params:
+        if "weight" in name or div_bias:
+            parm.data = parm.data/div
 
 def init_weights(m):
     a = 0.0001
-    b = a+0.00003
+    b = a+0.0002
     if isinstance(m, nn.Linear):
         # torch.nn.init.xavier_uniform(m.weight)
         # torch.nn.init.uniform_(m.weight,a=0.013,b=0.0145)
-        # torch.nn.init.xavier_uniform(m.weight)
-        torch.nn.init.uniform_(m.weight,a=a,b=b)
+        torch.nn.init.xavier_uniform(m.weight)
+        # torch.nn.init.uniform_(m.weight,a=a,b=b)
+        if m.bias is not None:
+            torch.nn.init.uniform_(m.bias,a=a,b=b)
         # m.bias.data.fill_(0.001)
 
 
@@ -131,13 +139,14 @@ class PDQP_Net_geq(torch.nn.Module):
 
 class PDQP_Net_AR_geq(torch.nn.Module):
     def __init__(self,x_size,y_size,feat_size,max_k = 20, threshold = 1e-8,nlayer=1, 
-                 tfype='linf', use_dual=True, eta_opt = 1e+6):
+                 tfype='linf', use_dual=True, eta_opt = 1e+6, div=4.0):
         super(PDQP_Net_AR_geq,self).__init__()
         self.max_k = max_k
         self.threshold = threshold
         
         self.net = PDQP_Net_geq(x_size,y_size,feat_size,nlayer=nlayer)
         self.net.apply(init_weights)
+        divide_weights(self.net,div=div,div_bias=True)
 
         self.qual_func = relKKT_general(tfype,eta_opt)
             
@@ -989,9 +998,18 @@ class r_gap(torch.nn.Module):
         primal_grad = c.unsqueeze(-1) - ATy + qx
         
         RC = torch.mul(self.act(primal_grad), il) + torch.mul(-self.act(-primal_grad), iu)
-        tm = torch.where(RC>0,l,u)
-        rc_contribution = torch.mul(RC,tm)
-        rc_contribution = torch.sum(rc_contribution)
+        
+        rc_contribution_lower = torch.where(RC>0,l,u)
+        rc_contribution_lower = torch.mul(RC,rc_contribution_lower)
+        rc_contribution_lower = torch.sum(rc_contribution_lower)
+        
+        rc_contribution_upper = torch.where(RC<0,u,0.0)
+        rc_contribution_upper = torch.mul(RC,rc_contribution_upper)
+        rc_contribution_upper = torch.sum(rc_contribution_upper)
+        
+        rc_contribution = rc_contribution_upper + rc_contribution_lower
+        rc_contribution_upper = None
+        rc_contribution_lower = None
         
         top_part = torch.abs(quad_term + lin_term - vio_term - rc_contribution)
 
@@ -1003,6 +1021,7 @@ class r_gap(torch.nn.Module):
         # bot_part = torch.tensor(1e+4)
         # torch.linalg.vector_norm(a,float('inf'))
         
+        # print(f'Primal: {lin_term.item()+0.5*quad_term.item()} - Dual: {vio_term.item()-0.5*quad_term.item()}=  {(quad_term + lin_term - vio_term).item()}       ------  RCC: {rc_contribution} ')
         
         
         return top_part/bot_part
@@ -1114,9 +1133,9 @@ class relKKT_l1(torch.nn.Module):
         # print(t1.item(),end=', ')
         # print(t2.item(),end=', ')
         # print(t3.item())
-        # res = t1 + t2 + t3
+        res = t1 + t2 + t3
         # res = torch.max(t1,torch.max(t2,t3))
-        res = t1
+        # res = t1
         # res = self.rpm(A,b,c,x,Iy)+self.rdl(Q,AT,b,c,x,y)
         return res
 
@@ -1210,9 +1229,18 @@ class r_primal_general(torch.nn.Module):
         self.mode = mode
         
     def forward(self,A,b,c,x,Iy, il, iu, l, u):
+        # diff_l = self.relu(l-x)
+        # print(diff_l)
+        
+        # diff_l = torch.mul(self.relu(l-x), il) + torch.mul(self.relu(x-u), iu)
+        
+        # for i in range(x.shape[0]):
+        #     if (diff_l[i]>0):
+        #         print(f'l:{l[i].item()}      x:{x[i].item()}      u:{u[i].item()}       vio:{diff_l[i].item()}')
+        #         input()
+        # input()
 
         Ax = torch.sparse.mm(A,x)
-
         cons_vio = b.unsqueeze(-1) - Ax
         cons_vio = cons_vio + torch.mul(self.relu(-cons_vio),Iy)
         var_vio = torch.mul(self.relu(l-x), il) + torch.mul(self.relu(x-u), iu)
@@ -1220,6 +1248,8 @@ class r_primal_general(torch.nn.Module):
         # part_3 = 1.0 + torch.max(torch.linalg.vector_norm(Ax,self.mode),torch.linalg.vector_norm(b,self.mode))
         part_3 = 1.0 + torch.linalg.vector_norm(b,self.mode)
         res = part_2/part_3
+        print(f'var_vio: {torch.norm(var_vio,2).item()}   cons_vio: {torch.norm(cons_vio,2).item()}')
+        # print(part_2/(1.0 + torch.max(torch.linalg.vector_norm(Ax,self.mode),torch.linalg.vector_norm(b,self.mode))))
         return res
 
 class r_dual_general(torch.nn.Module):
@@ -1235,12 +1265,18 @@ class r_dual_general(torch.nn.Module):
         Qx = torch.sparse.mm(Q,x) 
         ATy = torch.sparse.mm(AT,y) 
         
+
         primal_grad = c.unsqueeze(-1) - ATy + Qx
         
         RCV = primal_grad - torch.mul(self.act(primal_grad), il) - torch.mul(-self.act(-primal_grad), iu)
         DR = torch.mul(self.act(-y), Iy)
         
+        RCV_norm= torch.norm(RCV,self.mode)
+        DR_norm= torch.norm(DR,self.mode)
+        print(f'RCV norm: {RCV_norm}     DR norm: {DR_norm}')
+
         top_part = torch.linalg.vector_norm(torch.cat((RCV, DR),0),self.mode)
+        
         
         # bot_part = 1.0 + torch.max(torch.linalg.vector_norm(Qx,self.mode),torch.max(torch.linalg.vector_norm(ATy,self.mode),torch.linalg.vector_norm(c,2)))
         bot_part = 1.0 + torch.linalg.vector_norm(c,self.mode)
@@ -1259,8 +1295,7 @@ class r_gap_general(torch.nn.Module):
         self.act = nn.ReLU()
         self.eta_opt = eta_opt
         
-    def forward(self,Q,A,AT,b,c,x,y, il, iu,l,u):
-        
+    def forward(self,Q,A,AT,b,c,x,y,Iy, il, iu,l,u):
         xt = torch.transpose(x,0,1)
         qx = torch.matmul(Q,x)
         quad_term = torch.matmul(xt,qx)
@@ -1279,14 +1314,44 @@ class r_gap_general(torch.nn.Module):
         #         print(rc_contribution[i].item(),RC[i].item(),l[i].item(),u[i].item())
         # quit()
         rc_contribution = torch.mul(RC,rc_contribution)
-        rc_contribution = torch.sum(rc_contribution)
+        # rc_contribution = torch.sum(rc_contribution)
+        rc_contribution = torch.norm(rc_contribution,1)
         
-        top_part = torch.abs(quad_term + lin_term - vio_term - rc_contribution)
+
+        Axb = torch.mul(y,torch.sparse.mm(A,x)- b.unsqueeze(-1))
+        Axb = torch.mul(Axb,(1.0-Iy))
+        
+        # print(y)
+        # input()
+        # print(torch.sparse.mm(A,x)- b.unsqueeze(-1))
+        # input()
+        Axb = torch.norm(Axb,1)
+
+
+
+        Ayc = torch.mul(x,ATy - c.unsqueeze(-1))
+        Ayc = torch.norm(Ayc,1)
+
+
+
+
+        # top_part = torch.abs(quad_term + lin_term - vio_term - rc_contribution)
+        # top_part = torch.abs(quad_term + lin_term - vio_term )+ rc_contribution + Axb
+        top_part = torch.abs(quad_term + lin_term - vio_term - rc_contribution) + Axb 
+
+
+
+
+        
+        print(f'Primal: {lin_term.item()+0.5*quad_term.item()} - Dual: {vio_term.item()-0.5*quad_term.item()}=  {(quad_term + lin_term - vio_term).item()}       ------  RCC: {rc_contribution}    1/2xTQx: {0.5*quad_term.item()}\n           yT(Ax-b): {Axb.item()}  xT(ATy-c): {Ayc.item()}')
+        
         # return top_part/self.eta_opt
         
 
         # bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term))
-        bot_part = 1.0 + torch.norm(Q,self.mode)
+        # bot_part = 1.0 + torch.norm(Q,self.mode)
+        bot_part = self.eta_opt
+
         return top_part/bot_part
     
 
@@ -1300,14 +1365,47 @@ class r_CS_general(torch.nn.Module):
     
     def __init__(self,mode=2,eta_opt=1e+6):
         super(r_CS_general,self).__init__()
-        self.mode = mode
         self.act = nn.ReLU()
         self.eta_opt = eta_opt
         
-    def forward(self,Q,A,AT,b,c,x,y, il, iu,l,u):
-        
-        Axb = torch.sparse.mm(A,x)- b.unsqueeze(-1)
-        return torch.norm(torch.mul(y,Axb),1)
+    def forward(self,Q,A,AT,b,c,x,y,Iy, il, iu,l,u):
+        # consider ocnstraint violation
+        Axb = torch.mul(y,torch.sparse.mm(A,x)- b.unsqueeze(-1))
+        Axb = torch.mul(Axb,Iy)
+        Axb = torch.norm(Axb,1)
+        # consider bound violations
+        ATy = torch.sparse.mm(AT,y) 
+        qx = torch.matmul(Q,x)
+        primal_grad = c.unsqueeze(-1) - ATy + qx
+
+
+        # RC = torch.mul(self.act(primal_grad), il) + torch.mul(-self.act(-primal_grad), iu)
+        # rc_contribution = torch.where(RC>0,l,u)
+        # rc_contribution = torch.mul(RC,rc_contribution)
+        # rc_contribution = torch.norm(rc_contribution,1)
+
+
+        # var_vio = torch.mul(self.act(l-x), il) + torch.mul(self.act(x-u), iu)
+        # uz = torch.where(iu!=0,u,99999)
+        # vv = torch.where(iu!=0,x-u,0)
+        # vz = torch.where(il!=0,l-x,0)
+        # vio_info = torch.cat((l,x,uz,vv,vz),1)
+        # for i in vio_info:
+        #     if i[-1]>0 or i[-2]>0:
+        #         print(i)
+        #         input()
+        lb = torch.mul(self.act(primal_grad), il)
+        lb = torch.norm(torch.mul((x-l),lb),1)
+        ub = torch.mul(self.act(-primal_grad), iu)
+        ub = torch.norm(torch.mul((u-x),ub),1)
+        # print(f'primal grad: {primal_grad}')
+        # print(f'LB: {lb}')
+        # print(f'UB: {ub}')
+        # input()
+        rc_contribution = lb+ub
+        # add relu
+        # return Axb
+        return (Axb+rc_contribution)/self.eta_opt
 
 
 class relKKT_general(torch.nn.Module):
@@ -1323,8 +1421,8 @@ class relKKT_general(torch.nn.Module):
             mode = 1
         self.rpm = r_primal_general(mode)
         self.rdl = r_dual_general(mode)
-        # self.rgp = r_gap_general(mode,eta_opt)
-        self.rgp = r_CS_general(mode,eta_opt)
+        self.rgp = r_gap_general(mode,eta_opt)
+        # self.rgp = r_CS_general(mode,eta_opt)
         
 
     def forward(self,Q,A,AT,b,c,x,y,Iy, il, iu, l, u, vscale,cscale,cons_scale):
@@ -1340,8 +1438,10 @@ class relKKT_general(torch.nn.Module):
 
         t1 = self.rpm(A,b,c,x_unscaled,Iy, il, iu, l, u)
         t2 = self.rdl(Q,AT,b,c,x_unscaled,y_unscaled,Iy, il, iu, l, u)
-
-        t3 =self.rgp(Q,A,AT,b,c,x_unscaled,y_unscaled, il, iu,l,u)
+        t3 =self.rgp(Q,A,AT,b,c,x_unscaled,y_unscaled,Iy, il, iu,l,u)
 
         res = t1+t2+t3
+        # res = t1+t2
+        # res = t2+t3
+        # res = torch.max(t3,torch.max(t2,t1))
         return res,t1,t2,t3

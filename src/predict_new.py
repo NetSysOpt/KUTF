@@ -5,6 +5,11 @@ import gzip
 import os
 from alive_progress import alive_bar
 
+import argparse
+parser = argparse.ArgumentParser(description='Process some integers.')
+parser.add_argument('--type','-t', type=str, default='')
+args = parser.parse_args()
+
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 # max_k = 100
 # m = PDQP_Net_AR(1,1,64,max_k = max_k, threshold = 1e-4,nlayer=1).to(device)
@@ -16,7 +21,7 @@ device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 # m = PDQP_Net_shared(1,1,64,max_k = max_k, threshold = 1e-8,nlayer=2).to(device)
 # max_k = 1
 # m = PDQP_Net_shared(1,1,128,max_k = max_k, threshold = 1e-8,nlayer=16).to(device)
-config = getConfig()
+config = getConfig(args.type)
 max_k = int(config['max_k'])
 nlayer = int(config['nlayer'])
 net_width = int(config['net_width'])

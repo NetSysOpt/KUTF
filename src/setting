@@ -14,10 +14,10 @@
 # inf_time = 10
 
 # max_k = 10
-# nlayer = 4
+# nlayer = 2
 # net_width = 512
-# lr = 1e-4
-# Contu = 0
+# lr = 1e-5
+# Contu = 1
 # choose_weight = 0
 # model_mode = 2
 # mode = qplib_8785
@@ -28,10 +28,11 @@
 # eta_opt = 600
 # inf_time = 10
 
+8906
 max_k = 10
 nlayer = 4
 net_width = 512
-lr = 1e-4
+lr = 1e-5
 Contu = 0
 choose_weight = 0
 model_mode = 2
@@ -40,5 +41,24 @@ usedual = 1
 pareto = 0
 draw = 1
 accum_loss = 1
-eta_opt = 600
+eta_opt = 3600000
+inf_time = 20
+div = 1.1
+end 8906
+
+3913
+max_k = 10
+nlayer = 4
+net_width = 512
+lr = 1e-6
+Contu = 0
+choose_weight = 0
+model_mode = 2
+mode = qplib_3913
+usedual = 1
+pareto = 0
+draw = 1
+accum_loss = 1
+eta_opt = 8
 inf_time = 10
+end 3913

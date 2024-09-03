@@ -7,3 +7,4 @@ predictions
 gen_train_*
 qplib
 qplib*
+*.log

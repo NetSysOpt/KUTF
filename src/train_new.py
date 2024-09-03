@@ -8,6 +8,11 @@ import random
 
 # torch.backends.cudnn.enabled=False
 
+import argparse
+parser = argparse.ArgumentParser(description='Process some integers.')
+parser.add_argument('--type','-t', type=str, default='')
+args = parser.parse_args()
+
 device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu")
 r = torch.cuda.mem_get_info(device)
 device = torch.device(f"cuda:1" if torch.cuda.is_available() else "cpu")
@@ -24,8 +29,7 @@ pareto = False
 pareto = True
 
 
-
-config = getConfig()
+config = getConfig(args.type)
 max_k = int(config['max_k'])
 nlayer = int(config['nlayer'])
 lr1 = float(config['lr'])
@@ -33,6 +37,10 @@ net_width = int(config['net_width'])
 model_mode = int(config['model_mode'])
 mode = config['mode']
 eta_opt = float(config['eta_opt'])
+
+div = 1.0
+if 'div' in config:
+    div = float(config['div'])
 
 accum_loss = True
 if int(config['accum_loss'])==0:
@@ -61,8 +69,8 @@ m = None
 
 ident = f'k{max_k}_{nlayer}'
 
-type_modef = 'linf'
-# type_modef = 'l2'
+# type_modef = 'linf'
+type_modef = 'l2'
 
 
 if model_mode == 0:
@@ -71,7 +79,7 @@ elif model_mode == 1:
     m = PDQP_Net_AR(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,type=type_modef,use_dual=use_dual).to(device)
     ident += '_AR'
 elif model_mode == 2:
-    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual,eta_opt=eta_opt).to(device)
+    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual,eta_opt=eta_opt,div=div).to(device)
     ident += '_ARgeq'
 
     
@@ -84,6 +92,8 @@ elif model_mode == 2:
 
 # modf = relKKT_general(type_modef)
 modf = relKKT_real()
+modf = relKKT_general(mode = 'linf')
+
 
 
 # m = PDQP_Net_AR(1,1,128,nlayer=2).to(device)
@@ -216,14 +226,14 @@ for epoch in range(last_epoch,max_epoch):
     #     flog.write(st)
     #     flog.flush()
     if loaded:
-        draw_plot(y=avg_scprimal, ident='primal')
-        draw_plot(y=avg_scdual, ident='dual')
-        draw_plot(y=avg_scgap, ident='gap')
+        draw_plot(y=avg_scprimal, ident=f'primal_{mode}')
+        draw_plot(y=avg_scdual, ident=f'dual_{mode}')
+        draw_plot(y=avg_scgap, ident=f'gap_{mode}')
         loaded=False
     if best_loss > avg_sc:
-        draw_plot(y=avg_scprimal, ident='primal')
-        draw_plot(y=avg_scdual, ident='dual')
-        draw_plot(y=avg_scgap, ident='gap')
+        draw_plot(y=avg_scprimal, ident=f'primal_{mode}')
+        draw_plot(y=avg_scdual, ident=f'dual_{mode}')
+        draw_plot(y=avg_scgap, ident=f'gap_{mode}')
         best_loss = avg_sc
         state={'model':m.state_dict(),'optimizer':optimizer.state_dict(),'best_loss':avg_sc,'nepoch':epoch}
         torch.save(state,f'../model/best_pdqp{ident}.mdl')

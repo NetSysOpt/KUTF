@@ -5,7 +5,7 @@ import gzip
 import pickle
 import random
 random.seed(0)
-
+import multiprocessing
 train_tar_dir = '../pkl/train'
 valid_tar_dir = '../pkl/valid'
 
@@ -32,6 +32,7 @@ mode = 'qplib8547'
 mode = 'twod'
 mode = 'qplib8785'
 mode = 'qplib8906'
+mode = 'qplib3913'
 ident = ''
 train_files = os.listdir(train_ori_dir)
 valid_files = os.listdir(valid_ori_dir)
@@ -110,7 +111,7 @@ elif mode == 'qplib8547':
     valid_files = os.listdir(valid_ori_dir)
     ident = 'qplib8547'
 else:
-    mode1 = mode.replace('qplib_','')
+    mode1 = mode.replace('qplib','')
     train_tar_dir = f'../pkl/{mode1}_train'
     valid_tar_dir = f'../pkl/{mode1}_valid'
     train_ori_dir = f'../ins/gen_train_{mode1}'
@@ -148,8 +149,8 @@ failed = 0
 
 with alive_bar(len(train_files),title=f"Generating Training samples") as bar:
     for fnm in train_files:
-        v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_scaled_sparse(f'{valid_ori_dir}/{fnm}')
-        _, _, Q_ori, A_ori, c_ori, b_ori, x_ori, y_ori, vscale_ori, cscale_ori, constscale_ori, var_lb_ori, var_ub_ori, vars_ident_l_ori, vars_ident_u_ori, cons_ident_ori = extract_solfile_unscaled_sparse(f'{valid_ori_dir}/{fnm}')
+        # v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_scaled_sparse(f'{valid_ori_dir}/{fnm}')
+        # _, _, Q_ori, A_ori, c_ori, b_ori, x_ori, y_ori, vscale_ori, cscale_ori, constscale_ori, var_lb_ori, var_ub_ori, vars_ident_l_ori, vars_ident_u_ori, cons_ident_ori = extract_solfile_unscaled_sparse(f'{valid_ori_dir}/{fnm}')
 
         # for i in range(vars_ident_u.shape[0]):
         #     if vars_ident_u[i]!=vars_ident_u_ori[i]:
