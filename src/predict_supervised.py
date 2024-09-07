@@ -5,6 +5,11 @@ import gzip
 import os
 from alive_progress import alive_bar
 
+import argparse
+parser = argparse.ArgumentParser(description='Process some integers.')
+parser.add_argument('--type','-t', type=str, default='')
+args = parser.parse_args()
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # max_k = 100
 # m = PDQP_Net_AR(1,1,64,max_k = max_k, threshold = 1e-4,nlayer=1).to(device)
@@ -16,7 +21,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # m = PDQP_Net_shared(1,1,64,max_k = max_k, threshold = 1e-8,nlayer=2).to(device)
 # max_k = 1
 # m = PDQP_Net_shared(1,1,128,max_k = max_k, threshold = 1e-8,nlayer=16).to(device)
-config = getConfig()
+config = getConfig(args.type)
 max_k = int(config['max_k'])
 nlayer = int(config['nlayer'])
 net_width = int(config['net_width'])
@@ -130,6 +135,19 @@ with torch.no_grad():
         train_files = os.listdir(train_tar_dir)
         valid_files = os.listdir(valid_tar_dir)
         ident += '_qplib_8547'
+    else:
+        mode1 = mode.replace('qplib_','')
+        train_tar_dir = f'../pkl/{mode1}_train'
+        valid_tar_dir = f'../pkl/{mode1}_valid'
+        train_files = os.listdir(train_tar_dir)
+        valid_files = os.listdir(valid_tar_dir)
+        if len(valid_files) == 0:
+            valid_files.append(train_files[0])
+            valid_tar_dir = train_tar_dir
+        if len(train_files) ==1:
+            for i in range(20):
+                train_files.append(train_files[0])
+        ident += '_{mode}'
 
     loss_func = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(m.parameters(), lr=lr1)

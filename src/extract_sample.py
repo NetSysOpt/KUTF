@@ -33,6 +33,7 @@ mode = 'twod'
 mode = 'qplib8785'
 mode = 'qplib8906'
 mode = 'qplib3913'
+mode = 'qplib8845'
 ident = ''
 train_files = os.listdir(train_ori_dir)
 valid_files = os.listdir(valid_ori_dir)

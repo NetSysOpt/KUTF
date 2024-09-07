@@ -1509,7 +1509,7 @@ def inference(m,fnm,epoch,valid_tar_dir,pareto,device,modf,autoregression_iterat
 
 
 
-def sol_check(fdir,device,modf):
+def sol_check(fdir,device,modf,pert=None):
     f_tar = gzip.open(f'{fdir}','rb')
     to_pack = pickle.load(f_tar)
     v_feat = to_pack['vf'].to(device)
@@ -1519,10 +1519,20 @@ def sol_check(fdir,device,modf):
     AT = torch.transpose(A,0,1)
     c = to_pack['c'].to(device)
     b = to_pack['b'].to(device)
-    x = to_pack['x'].to(device)
-    y = to_pack['y'].to(device)
+    x = to_pack['x']
+    y = to_pack['y']
     c = torch.unsqueeze(c,-1)
     b = torch.unsqueeze(b,-1)
+
+    if pert is not None:
+        perturb = torch.ones(size = x.shape)+(torch.rand(size = x.shape)*pert*2-torch.ones(size = x.shape)*pert)
+        print(perturb.shape,x.shape)
+        x = x*perturb
+        perturb = torch.ones(size = y.shape)+(torch.rand(size = y.shape)*pert*2-torch.ones(size = y.shape)*pert)
+        print(perturb.shape,y.shape)
+        y = y*perturb
+    x = x.to(device)
+    y = y.to(device)
 
     Q_ori = to_pack['Q_ori'].to(device)
     A_ori = to_pack['A_ori'].to(device)
@@ -1570,7 +1580,96 @@ def sol_check(fdir,device,modf):
     print('primal_res',prim_res)
     print('dual_res',dual_res)
     print('gaps',gaps)
+
+    x=x.squeeze(-1)
+    y=y.squeeze(-1)
+    print(f' x inf norm',torch.norm(x,float('inf')))
+    print(f' y inf norm',torch.norm(y,float('inf')))
+    # print(y)
     print()
+
+    return x,y,ttloss,prim_res,dual_res,gaps
+
+
+
+def sol_check_model(fdir,device,modf,model):
+    f_tar = gzip.open(f'{fdir}','rb')
+    to_pack = pickle.load(f_tar)
+    v_feat = to_pack['vf'].to(device)
+    c_feat = to_pack['cf'].to(device)
+    Q = to_pack['Q'].to(device)
+    A = to_pack['A'].to(device)
+    AT = torch.transpose(A,0,1)
+    c = to_pack['c'].to(device)
+    b = to_pack['b'].to(device)
+    x_ori = to_pack['x']
+    y_ori = to_pack['y']
+    c = torch.unsqueeze(c,-1)
+    b = torch.unsqueeze(b,-1)
+
+    
+    x_ori = x_ori.to(device)
+    y_ori = y_ori.to(device)
+
+    Q_ori = to_pack['Q_ori'].to(device)
+    A_ori = to_pack['A_ori'].to(device)
+    AT_ori = torch.transpose(A_ori,0,1)
+    c_ori = to_pack['c_ori'].to(device)
+    b_ori = to_pack['b_ori'].to(device)
+    c_ori = torch.unsqueeze(c_ori,-1)
+    b_ori = torch.unsqueeze(b_ori,-1)
+    var_lb_ori = torch.as_tensor(to_pack['var_lb_ori'], dtype=torch.float32).to(device)
+    var_ub_ori = torch.as_tensor(to_pack['var_ub_ori'], dtype=torch.float32).to(device)
+
+    vscale = torch.as_tensor(to_pack['vscale']).to(device).unsqueeze(-1)
+    cscale = torch.as_tensor(to_pack['cscale'] ).to(device).unsqueeze(-1)
+    constscale = torch.as_tensor(to_pack['constscale']).to(device).unsqueeze(-1)
+    cons_ident = torch.as_tensor(to_pack['cons_ident'], dtype=torch.float32).to(device)
+    vars_ident_l = torch.as_tensor(to_pack['vars_ident_l'], dtype=torch.float32).to(device)
+    vars_ident_u = torch.as_tensor(to_pack['vars_ident_u'], dtype=torch.float32).to(device)
+    var_lb = torch.as_tensor(to_pack['var_lb'], dtype=torch.float32).to(device)
+    var_ub = torch.as_tensor(to_pack['var_ub'], dtype=torch.float32).to(device)
+    f_tar.close()
+    if cons_ident.shape[-1]!=1:
+        cons_ident = cons_ident.unsqueeze(-1)
+    if vars_ident_l.shape[-1]!=1:
+        vars_ident_l = vars_ident_l.unsqueeze(-1)
+    if vars_ident_u.shape[-1]!=1:
+        vars_ident_u = vars_ident_u.unsqueeze(-1)
+    if var_lb.shape[-1]!=1:
+        var_lb = var_lb.unsqueeze(-1)
+    if var_ub.shape[-1]!=1:
+        var_ub = var_ub.unsqueeze(-1)
+    if var_lb_ori.shape[-1]!=1:
+        var_lb_ori = var_lb_ori.unsqueeze(-1)
+    if var_ub_ori.shape[-1]!=1:
+        var_ub_ori = var_ub_ori.unsqueeze(-1)
+    # in this version, use all 0 start
+    v_feat = torch.zeros((v_feat.shape[0],1),dtype=torch.float32).to(device)
+    c_feat = torch.zeros((c_feat.shape[0],1),dtype=torch.float32).to(device)
+    x,y,scs,mult = model(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
+                                                AT_ori,A_ori,Q_ori,b_ori,c_ori,vscale,cscale,constscale,var_lb_ori,var_ub_ori)
+
+
+
+    bqual_ori = b_ori.squeeze(-1).to(device)
+    cqual_ori = c_ori.squeeze(-1).to(device)
+    ttloss, prim_res, dual_res, gaps = modf(Q_ori,A_ori,AT_ori,bqual_ori,cqual_ori,x,y,cons_ident,vars_ident_l,vars_ident_u,var_lb_ori,var_ub_ori, vscale,cscale,constscale)
+    # print(x)
+    # print(y)
+    print('primal_res',prim_res)
+    print('dual_res',dual_res)
+    print('gaps',gaps)
+
+    print(f' x inf norm',torch.norm(x,float('inf')))
+    print(f' y inf norm',torch.norm(y,float('inf')))
+    # print(y)
+    print()
+
+    x_norm = torch.norm(x-x_ori,2)
+    y_norm = torch.norm(y-y_ori,2)
+
+    return x,y,ttloss,prim_res,dual_res,gaps,x_norm,y_norm
 
 
 check_grad=False
@@ -1813,6 +1912,22 @@ def valid_supervised(m,valid_files,epoch,valid_tar_dir,device,modf,autoregressio
                 y = to_pack['y'].to(device)
                 c = torch.unsqueeze(c,-1)
                 b = torch.unsqueeze(b,-1)
+                Q_ori = to_pack['Q_ori'].to(device)
+                A_ori = to_pack['A_ori'].to(device)
+                AT_ori = torch.transpose(A_ori,0,1)
+                c_ori = to_pack['c_ori'].to(device)
+                b_ori = to_pack['b_ori'].to(device)
+                c_ori = torch.unsqueeze(c_ori,-1)
+                # print(c_ori)
+                # quit()
+                b_ori = torch.unsqueeze(b_ori,-1)
+                var_lb_ori = torch.as_tensor(to_pack['var_lb_ori'], dtype=torch.float32).to(device)
+                var_ub_ori = torch.as_tensor(to_pack['var_ub_ori'], dtype=torch.float32).to(device)
+
+
+                vscale = torch.as_tensor(to_pack['vscale']).to(device).unsqueeze(-1)
+                cscale = torch.as_tensor(to_pack['cscale'] ).to(device).unsqueeze(-1)
+                constscale = torch.as_tensor(to_pack['constscale']).to(device).unsqueeze(-1)
                 cons_ident = torch.as_tensor(to_pack['cons_ident'], dtype=torch.float32).to(device)
                 vars_ident_l = torch.as_tensor(to_pack['vars_ident_l'], dtype=torch.float32).to(device)
                 vars_ident_u = torch.as_tensor(to_pack['vars_ident_u'], dtype=torch.float32).to(device)
@@ -1830,6 +1945,10 @@ def valid_supervised(m,valid_files,epoch,valid_tar_dir,device,modf,autoregressio
                     var_lb = var_lb.unsqueeze(-1)
                 if var_ub.shape[-1]!=1:
                     var_ub = var_ub.unsqueeze(-1)
+                if var_lb_ori.shape[-1]!=1:
+                    var_lb_ori = var_lb_ori.unsqueeze(-1)
+                if var_ub_ori.shape[-1]!=1:
+                    var_ub_ori = var_ub_ori.unsqueeze(-1)
                     
                     
                 v_feat = torch.zeros((v_feat.shape[0],1),dtype=torch.float32).to(device)
@@ -1838,11 +1957,15 @@ def valid_supervised(m,valid_files,epoch,valid_tar_dir,device,modf,autoregressio
 
 
                 for itr in range(autoregression_iteration):
-                    x_pred,y_pred,scs_all,mult = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub)
+                    # x_pred,y_pred,scs_all,mult = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub)
+                    x_pred,y_pred,scs_all,mult = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
+                                                    AT_ori,A_ori,Q_ori,b_ori,c_ori,vscale,cscale,constscale,var_lb_ori,var_ub_ori)
 
-                    bqual = b.squeeze(-1).to(device)
-                    cqual = c.squeeze(-1).to(device)
-                    ttloss, prim_res, dual_res, gaps = modf(Q,A,AT,bqual,cqual,x_pred,y_pred,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub)
+                    bqual_ori = b_ori.squeeze(-1).to(device)
+                    cqual_ori = c_ori.squeeze(-1).to(device)
+                    ttloss, prim_res, dual_res, gaps = modf(Q_ori,A_ori,AT_ori,bqual_ori,cqual_ori,x_pred,y_pred,cons_ident,vars_ident_l,vars_ident_u,var_lb_ori,var_ub_ori, vscale,cscale,constscale)
+
+                    # ttloss, prim_res, dual_res, gaps = modf(Q,A,AT,bqual,cqual,x_pred,y_pred,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub)
                     print(f'primal_res: {prim_res.item()}   dual_res: {dual_res.item()}   gaps: {gaps.item()}')
                     real_sc = torch.max(prim_res,torch.max(dual_res,gaps))
                     real_sc_num = real_sc.item()
@@ -1852,7 +1975,7 @@ def valid_supervised(m,valid_files,epoch,valid_tar_dir,device,modf,autoregressio
                     avg_scdual[itr] += dual_res.item()
                     avg_scgap[itr] += gaps.item()
 
-                    loss = loss_func(x_pred, x)
+                    loss = loss_func(x_pred, x) + loss_func(y_pred, y)
                     loss_num = loss.item()
                     avg_valid_loss[itr] += loss_num
 
@@ -1889,6 +2012,23 @@ def train_supervised(m,train_files,epoch,train_tar_dir,device,optimizer,choose_w
             y = to_pack['y'].to(device)
             c = torch.unsqueeze(c,-1)
             b = torch.unsqueeze(b,-1)
+
+            Q_ori = to_pack['Q_ori'].to(device)
+            A_ori = to_pack['A_ori'].to(device)
+            AT_ori = torch.transpose(A_ori,0,1)
+            c_ori = to_pack['c_ori'].to(device)
+            b_ori = to_pack['b_ori'].to(device)
+            c_ori = torch.unsqueeze(c_ori,-1)
+            # print(c_ori)
+            # quit()
+            b_ori = torch.unsqueeze(b_ori,-1)
+            var_lb_ori = torch.as_tensor(to_pack['var_lb_ori'], dtype=torch.float32).to(device)
+            var_ub_ori = torch.as_tensor(to_pack['var_ub_ori'], dtype=torch.float32).to(device)
+
+
+            vscale = torch.as_tensor(to_pack['vscale']).to(device).unsqueeze(-1)
+            cscale = torch.as_tensor(to_pack['cscale'] ).to(device).unsqueeze(-1)
+            constscale = torch.as_tensor(to_pack['constscale']).to(device).unsqueeze(-1)
             cons_ident = torch.as_tensor(to_pack['cons_ident'], dtype=torch.float32).to(device)
             vars_ident_l = torch.as_tensor(to_pack['vars_ident_l'], dtype=torch.float32).to(device)
             vars_ident_u = torch.as_tensor(to_pack['vars_ident_u'], dtype=torch.float32).to(device)
@@ -1906,6 +2046,10 @@ def train_supervised(m,train_files,epoch,train_tar_dir,device,optimizer,choose_w
                 var_lb = var_lb.unsqueeze(-1)
             if var_ub.shape[-1]!=1:
                 var_ub = var_ub.unsqueeze(-1)
+            if var_lb_ori.shape[-1]!=1:
+                var_lb_ori = var_lb_ori.unsqueeze(-1)
+            if var_ub_ori.shape[-1]!=1:
+                var_ub_ori = var_ub_ori.unsqueeze(-1)
 
             
             # in this version, use all 0 start
@@ -1920,12 +2064,14 @@ def train_supervised(m,train_files,epoch,train_tar_dir,device,optimizer,choose_w
             for itr in range(autoregression_iteration):
                 if not accu_loss:
                     optimizer.zero_grad()
-                x_pred,y_pred,scs_all,mult = m(AT,A,Q,b,c,var_feat,con_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub)
+                # x_pred,y_pred,scs_all,mult = m(AT,A,Q,b,c,var_feat,con_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub)
+                x_pred,y_pred,scs_all,mult = m(AT,A,Q,b,c,var_feat,con_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
+                                                   AT_ori,A_ori,Q_ori,b_ori,c_ori,vscale,cscale,constscale,var_lb_ori,var_ub_ori)
                 # print(x_pred)
                 pr_it = scs_all[1].item()
                 du_it = scs_all[2].item()
                 gp_it = scs_all[3].item()
-                loss = loss_func(x_pred, x)
+                loss = loss_func(x_pred, x) + loss_func(y_pred, y)
 
                 loss_num = loss.item()
                 avg_train_loss[itr] += loss_num

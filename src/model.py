@@ -42,6 +42,24 @@ def init_weights(m):
 
 
 
+class step_size_pred(torch.nn.Module):
+    
+    def __init__(self,feat_size):
+        super(step_size_pred,self).__init__()
+        self.feat_size = feat_size
+        
+        self.lin_1 = nn.Sequential(
+            nn.Linear(feat_size,1,bias=False),
+        )
+        self.lin_2 = nn.Sequential(
+            nn.Linear(feat_size,1,bias=False),
+        )
+        self.act = nn.LeakyReLU()
+        
+    def forward(self,x,y):
+        return self.act(torch.sum(self.lin_1(x)) + torch.sum(self.lin_2(y)))
+
+
 class inner_loop_geq(torch.nn.Module):
     
     def __init__(self,x_size, y_size, feat_size):
@@ -57,9 +75,6 @@ class inner_loop_geq(torch.nn.Module):
         self.xproj = proj_x(feat_size)
 
         self.lin_1 = nn.Sequential(
-            nn.Linear(feat_size,feat_size,bias=False),
-        )
-        self.lin_2 = nn.Sequential(
             nn.Linear(feat_size,feat_size,bias=False),
         )
         self.lin_3 = nn.Sequential(
@@ -79,11 +94,63 @@ class inner_loop_geq(torch.nn.Module):
         x_new = x - self.emu_eta * (self.lin_3(torch.matmul(Q,x_md)) + cmat - self.lin_4(torch.matmul(AT,y)))
         x_new = self.xproj(x_new, indicator_x_l, indicator_x_u, l, u)
 
+
         # need to check if we want to wrap this with a linear layer
         #       current setting seems better for the theoretical part
         #  !Y update
         x_delta = self.emu_theta*(x_new - x) + x_new
         x_delta = self.emu_gamma * (bmat - self.lin_1(torch.matmul(A,x_delta))  )
+        y_new = y + x_delta
+        y_new = self.yproj(y_new, indicator_y)
+
+        # print('step sizes')
+        # print(self.emu_eta,self.emu_theta,self.emu_gamma,self.emu_beta)
+        # quit()
+
+        x_bar = (1.0-self.emu_beta)*x_bar + (self.emu_beta)*x_new
+
+        return x_new,x_bar,y_new
+
+
+class inner_loop_geq_stepsize(torch.nn.Module):
+    
+    def __init__(self,x_size, y_size, feat_size):
+        super(inner_loop_geq_stepsize,self).__init__()
+        self.feat_size = feat_size
+        self.emu_gamma = step_size_pred(feat_size)
+        self.emu_eta = step_size_pred(feat_size)
+        self.emu_beta = torch.nn.Parameter(torch.ones(size=(1, ),requires_grad=True))
+        self.emu_theta = step_size_pred(feat_size)
+
+        # TO be changed
+        self.yproj = proj_y(feat_size)
+        self.xproj = proj_x(feat_size)
+
+        self.lin_1 = nn.Sequential(
+            nn.Linear(feat_size,feat_size,bias=False),
+        )
+        self.lin_3 = nn.Sequential(
+            nn.Linear(feat_size,feat_size,bias=False),
+        )
+        self.lin_4 = nn.Sequential(
+            nn.Linear(feat_size,feat_size,bias=False),
+        )
+        
+        
+    def forward(self,x,x_bar,y,Q,A,AT,c,b,indicator_y,indicator_x_l,indicator_x_u,l,u,cmat,bmat):
+
+        # start updating
+        x_md = (1.0-self.emu_beta)*x_bar + (self.emu_beta)*x
+        
+        # update x
+        x_new = x - self.emu_eta(x,y) * (self.lin_3(torch.matmul(Q,x_md)) + cmat - self.lin_4(torch.matmul(AT,y)))
+        x_new = self.xproj(x_new, indicator_x_l, indicator_x_u, l, u)
+
+        # need to check if we want to wrap this with a linear layer
+        #       current setting seems better for the theoretical part
+        #  !Y update
+        x_delta = self.emu_theta(x_new,y)*(x_new - x) + x_new
+        x_delta = self.emu_gamma(x_new,y) * (bmat - self.lin_1(torch.matmul(A,x_delta))  )
         y_new = self.yproj(y + x_delta, indicator_y)
 
 
@@ -92,47 +159,57 @@ class inner_loop_geq(torch.nn.Module):
         return x_new,x_bar,y_new
 
 
-
-
 class PDQP_Net_geq(torch.nn.Module):
     def __init__(self,x_size,y_size,feat_size,nlayer=8):
         super(PDQP_Net_geq,self).__init__()
 
         self.feat_size = feat_size
 
-        self.init_x = nn.Sequential(
-            nn.Linear(x_size,feat_size,bias=True),
-            # nn.LeakyReLU(),
-        )
-        self.init_y = nn.Sequential(
-            nn.Linear(y_size,feat_size,bias=True),
+        # self.init_x = nn.Sequential(
+        #     nn.Linear(x_size,feat_size,bias=False),
+        #     # nn.LeakyReLU(),
+        # )
+        # self.init_y = nn.Sequential(
+        #     nn.Linear(y_size,feat_size,bias=False),
+        #     # nn.LeakyReLU(),
+        # )
+        self.init = nn.Sequential(
+            nn.Linear(y_size,feat_size,bias=False),
             # nn.LeakyReLU(),
         )
 
         self.updates = nn.ModuleList()
         for indx in range(nlayer):
             self.updates.append(inner_loop_geq(feat_size,feat_size,feat_size))
+            # self.updates.append(inner_loop_geq_stepsize(feat_size,feat_size,feat_size))
 
-        self.out_x = nn.Sequential(
-            nn.Linear(feat_size,1,bias=True),
-        )
-        self.out_y = nn.Sequential(
-            nn.Linear(feat_size,1,bias=True),
+        # self.out_x = nn.Sequential(
+        #     nn.Linear(feat_size,1,bias=False),
+        # )
+        # self.out_y = nn.Sequential(
+        #     nn.Linear(feat_size,1,bias=False),
+        # )
+        self.out = nn.Sequential(
+            nn.Linear(feat_size,1,bias=False),
         )
         
     def forward(self,A,AT,Q,b,c,x,y,indicator_y,indicator_x_l,indicator_x_u,l,u):
 
         # initial encoding
-        x = self.init_x(x)
-        y = self.init_y(y)
+        # x = self.init_x(x)
+        # y = self.init_y(y)
+        x = self.init(x)
+        y = self.init(y)
         
         x_bar = x
         cmat = torch.matmul(c,torch.ones((1,self.feat_size),dtype = torch.float32).to(c.device))
         bmat = torch.matmul(b,torch.ones((1,self.feat_size),dtype = torch.float32).to(b.device))
         for index, layer in enumerate(self.updates):
             x,x_bar,y = layer(x,x_bar,y,Q,A,AT,c,b,indicator_y,indicator_x_l,indicator_x_u,l,u,cmat,bmat)
-        x = self.out_x(x)
-        y = self.out_y(y)
+        # x = self.out_x(x)
+        # y = self.out_y(y)
+        x = self.out(x)
+        y = self.out(y)
         return x,y
 
 
@@ -632,7 +709,8 @@ class proj_y(torch.nn.Module):
     def forward(self,y,indicator_y):
         if indicator_y.shape[-1]!=1:
             indicator_y = indicator_y.unsqueeze(-1)
-        return y + indicator_y * self.rr(-y)
+        res = y + indicator_y * self.rr(-y)
+        return res
 
 class proj_x(torch.nn.Module):
     def __init__(self, feat_size):
@@ -1222,11 +1300,12 @@ class relKKT_real(torch.nn.Module):
 
 class r_primal_general(torch.nn.Module):
     
-    def __init__(self,mode = 2):
+    def __init__(self,mode = 2,norm=False):
         super(r_primal_general,self).__init__()
         # self.act = proj_y(1)
         self.relu = nn.ReLU()
         self.mode = mode
+        self.norm = norm
         
     def forward(self,A,b,c,x,Iy, il, iu, l, u):
         # diff_l = self.relu(l-x)
@@ -1245,8 +1324,11 @@ class r_primal_general(torch.nn.Module):
         cons_vio = cons_vio + torch.mul(self.relu(-cons_vio),Iy)
         var_vio = torch.mul(self.relu(l-x), il) + torch.mul(self.relu(x-u), iu)
         part_2 = torch.linalg.vector_norm(torch.cat((var_vio,cons_vio),0),self.mode)
-        # part_3 = 1.0 + torch.max(torch.linalg.vector_norm(Ax,self.mode),torch.linalg.vector_norm(b,self.mode))
-        part_3 = 1.0 + torch.linalg.vector_norm(b,self.mode)
+        if self.norm:
+            part_3 = 1.0 + torch.max(torch.linalg.vector_norm(Ax,self.mode),torch.linalg.vector_norm(b,self.mode))
+        else:
+            part_3 = 1.0 + torch.linalg.vector_norm(b,self.mode)
+            # part_3 = 1.0 
         res = part_2/part_3
         print(f'var_vio: {torch.norm(var_vio,2).item()}   cons_vio: {torch.norm(cons_vio,2).item()}')
         # print(part_2/(1.0 + torch.max(torch.linalg.vector_norm(Ax,self.mode),torch.linalg.vector_norm(b,self.mode))))
@@ -1254,11 +1336,12 @@ class r_primal_general(torch.nn.Module):
 
 class r_dual_general(torch.nn.Module):
     
-    def __init__(self,mode=2):
+    def __init__(self,mode=2,norm=False):
         super(r_dual_general,self).__init__()
         self.yproj = proj_y(1)
         self.act = nn.ReLU()
         self.mode = mode
+        self.norm = norm
         
     def forward(self,Q,AT,b,c,x,y,Iy, il, iu, l, u):
 
@@ -1277,9 +1360,11 @@ class r_dual_general(torch.nn.Module):
 
         top_part = torch.linalg.vector_norm(torch.cat((RCV, DR),0),self.mode)
         
-        
-        # bot_part = 1.0 + torch.max(torch.linalg.vector_norm(Qx,self.mode),torch.max(torch.linalg.vector_norm(ATy,self.mode),torch.linalg.vector_norm(c,2)))
-        bot_part = 1.0 + torch.linalg.vector_norm(c,self.mode)
+        if self.norm:
+            bot_part = 1.0 + torch.max(torch.linalg.vector_norm(Qx,self.mode),torch.max(torch.linalg.vector_norm(ATy,self.mode),torch.linalg.vector_norm(c,2)))
+        else:
+            bot_part = 1.0 + torch.linalg.vector_norm(c,self.mode)
+            # bot_part = 1.0 
         res = top_part/bot_part
         return res
         
@@ -1289,11 +1374,12 @@ class r_dual_general(torch.nn.Module):
         
 class r_gap_general(torch.nn.Module):
     
-    def __init__(self,mode=2,eta_opt=1e+6):
+    def __init__(self,mode=2,eta_opt=1e+6,norm=False):
         super(r_gap_general,self).__init__()
         self.mode = mode
         self.act = nn.ReLU()
         self.eta_opt = eta_opt
+        self.norm = norm
         
     def forward(self,Q,A,AT,b,c,x,y,Iy, il, iu,l,u):
         xt = torch.transpose(x,0,1)
@@ -1314,12 +1400,12 @@ class r_gap_general(torch.nn.Module):
         #         print(rc_contribution[i].item(),RC[i].item(),l[i].item(),u[i].item())
         # quit()
         rc_contribution = torch.mul(RC,rc_contribution)
-        # rc_contribution = torch.sum(rc_contribution)
-        rc_contribution = torch.norm(rc_contribution,1)
+        rc_contribution = torch.sum(rc_contribution)
+        # rc_contribution = torch.norm(rc_contribution,1)
         
 
         Axb = torch.mul(y,torch.sparse.mm(A,x)- b.unsqueeze(-1))
-        Axb = torch.mul(Axb,(1.0-Iy))
+        # Axb = torch.mul(Axb,(1.0-Iy))
         
         # print(y)
         # input()
@@ -1329,22 +1415,26 @@ class r_gap_general(torch.nn.Module):
 
 
 
-        Ayc = torch.mul(x,ATy - c.unsqueeze(-1))
-        Ayc = torch.norm(Ayc,1)
+        # Ayc = torch.mul(x,ATy - c.unsqueeze(-1))
+        # Ayc = torch.norm(Ayc,1)
 
 
 
 
         # top_part = torch.abs(quad_term + lin_term - vio_term - rc_contribution)
         # top_part = torch.abs(quad_term + lin_term - vio_term )+ rc_contribution + Axb
-        top_part = torch.abs(quad_term + lin_term - vio_term - rc_contribution) + Axb 
+        top_part = torch.abs(quad_term + lin_term - vio_term - rc_contribution) 
 
 
 
 
         
-        print(f'Primal: {lin_term.item()+0.5*quad_term.item()} - Dual: {vio_term.item()-0.5*quad_term.item()}=  {(quad_term + lin_term - vio_term).item()}       ------  RCC: {rc_contribution}    1/2xTQx: {0.5*quad_term.item()}\n           yT(Ax-b): {Axb.item()}  xT(ATy-c): {Ayc.item()}')
-        
+        print(f'Primal: {lin_term.item()+0.5*quad_term.item()} - Dual: {vio_term.item()-0.5*quad_term.item()}=  {(quad_term + lin_term - vio_term).item()}       ------  RCC: {rc_contribution}    1/2xTQx: {0.5*quad_term.item()}\n           yT(Ax-b): {Axb.item()}')
+        # for i in range(y.shape[0]):
+        #     if y[i].item()*b[i].item()<0:
+        #         print(y[i].item()*b[i].item(),y[i].item(),b[i].item(),i)
+        #         input()
+        # quit()
         # return top_part/self.eta_opt
         
 
@@ -1410,7 +1500,7 @@ class r_CS_general(torch.nn.Module):
 
 class relKKT_general(torch.nn.Module):
     
-    def __init__(self,mode=2,eta_opt = 1e+6):
+    def __init__(self,mode=2,eta_opt = 1e+6,norm=False):
         print(f'!!!  relKKT using {mode} norm, with estimated optimum of {eta_opt}  !!!')
         super(relKKT_general,self).__init__()
         if mode == 'linf':
@@ -1419,9 +1509,9 @@ class relKKT_general(torch.nn.Module):
             mode = 2
         elif '1' in mode:
             mode = 1
-        self.rpm = r_primal_general(mode)
-        self.rdl = r_dual_general(mode)
-        self.rgp = r_gap_general(mode,eta_opt)
+        self.rpm = r_primal_general(mode,norm)
+        self.rdl = r_dual_general(mode,norm)
+        self.rgp = r_gap_general(mode,eta_opt,norm)
         # self.rgp = r_CS_general(mode,eta_opt)
         
 
@@ -1440,8 +1530,8 @@ class relKKT_general(torch.nn.Module):
         t2 = self.rdl(Q,AT,b,c,x_unscaled,y_unscaled,Iy, il, iu, l, u)
         t3 =self.rgp(Q,A,AT,b,c,x_unscaled,y_unscaled,Iy, il, iu,l,u)
 
-        res = t1+t2+t3
+        # res = t1+t2+t3
         # res = t1+t2
         # res = t2+t3
-        # res = torch.max(t3,torch.max(t2,t1))
+        res = torch.max(t3,torch.max(t2,t1))
         return res,t1,t2,t3

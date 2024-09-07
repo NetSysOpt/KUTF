@@ -709,7 +709,7 @@ def pert_ins(pert_range=0.1, ori_ins = '../qplib_qps/QPLIB_8906.mps', indx = 0,
 
 
 
-for i in range(500):
+for i in range(100):
     # gen_cont_uniform_pert(indx = i)
     # gen_8938(indx = i)
 
@@ -719,4 +719,6 @@ for i in range(500):
     # gen_8785(indx = i)
     # pert_ins(indx=i,ori_ins = '../qplib_qps/QPLIB_8785.mps',identifier ='8785',)
     # pert_ins(pert_range=0,indx=i,ori_ins = '../qplib_qps/twod.mps',identifier ='twod',)
-    pert_ins(indx=i,ori_ins = '../qplib_qps/QPLIB_3913.mps',identifier ='3913',)
+    # pert_ins(indx=i,ori_ins = '../qplib_qps/QPLIB_3913.mps',identifier ='3913',)
+    pert_ins(indx=i,ori_ins = '../qplib_qps/QPLIB_8845.mps',identifier ='8845',)
+    pert_ins(indx=i,ori_ins = '../qplib_qps/rqp1_nqc.mps',identifier ='rqp1',)

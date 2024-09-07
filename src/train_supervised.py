@@ -20,9 +20,14 @@ mode = 'cont'
 pareto = False
 pareto = True
 
+import argparse
+parser = argparse.ArgumentParser(description='Process some integers.')
+parser.add_argument('--type','-t', type=str, default='')
+parser.add_argument('--sl','-s', type=int, default=0)
+args = parser.parse_args()
 
 
-config = getConfig()
+config = getConfig(args.type)
 max_k = int(config['max_k'])
 nlayer = int(config['nlayer'])
 lr1 = float(config['lr'])
@@ -147,6 +152,19 @@ elif mode == 'qplib_8547':
     train_files = os.listdir(train_tar_dir)
     valid_files = os.listdir(valid_tar_dir)
     ident += '_qplib_8547'
+else:
+    mode1 = mode.replace('qplib_','')
+    train_tar_dir = f'../pkl/{mode1}_train'
+    valid_tar_dir = f'../pkl/{mode1}_valid'
+    train_files = os.listdir(train_tar_dir)
+    valid_files = os.listdir(valid_tar_dir)
+    if len(valid_files) == 0:
+        valid_files.append(train_files[0])
+        valid_tar_dir = train_tar_dir
+    if len(train_files) ==1:
+        for i in range(20):
+            train_files.append(train_files[0])
+    ident += '_{mode}'
 
 
 loss_func = torch.nn.MSELoss()
@@ -171,10 +189,18 @@ if os.path.exists(f"../model/best_pdqp{ident}.mdl") and Contu:
     print('Model Loaded')
     loaded=True
 
+save_log = True
+if args.sl == 0:
+    save_log = False
+if save_log:
+    valid_files.sort()
+    tar = f'{valid_tar_dir}/{valid_files[-1]}'
+    f_gg = open(f'../plots/distance/logs/{args.type}_{valid_files[-1]}_ori.rec','w')
+
+loss_log = open(f'../logs/train_{mode}_supervised.log','a+')
 for epoch in range(last_epoch,max_epoch):
     avg_train_loss = process_supervised(m,train_files,epoch,train_tar_dir,device=device,optimizer=optimizer,choose_weight=choose_weight,autoregression_iteration=max_k,accu_loss = accum_loss)
     avg_train_loss = avg_train_loss[-1] / len(train_files)
-
     avg_valid_loss,avg_sc, avg_scprimal, avg_scdual, avg_scgap = process_supervised(m,valid_files,epoch,valid_tar_dir,device=device,optimizer=modf,choose_weight=choose_weight,autoregression_iteration=max_k,training=False)
     avg_valid_loss = avg_valid_loss[-1] / len(valid_files)
     avg_sc = avg_sc[-1]/len(valid_files)
@@ -190,6 +216,18 @@ for epoch in range(last_epoch,max_epoch):
     flog.write(st)
     flog.flush()
     print(f'Epoch{epoch}: train loss:{avg_train_loss}    valid loss:{avg_valid_loss}')
+
+
+    if save_log:
+        x,y,sc,pres,dres,gap,x_norm,y_norm = sol_check_model(tar,device,modf,m)
+        st = f'{epoch} {pres.item()} {dres.item()} {gap.item()} {sc.item()} {x_norm.item()} {y_norm.item()}\n'
+        f_gg.write(st)
+        f_gg.flush()
+
+
+    st =f'{epoch} {avg_train_loss} {avg_valid_loss}\n'
+    loss_log.write(st)
+    loss_log.flush()
 
     # if best_loss > avg_valid_loss:
     #     best_loss = avg_valid_loss
@@ -219,4 +257,5 @@ for epoch in range(last_epoch,max_epoch):
 
 
 
+f_gg.close()
 flog.close()
