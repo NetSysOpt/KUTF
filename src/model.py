@@ -1077,7 +1077,7 @@ class r_gap(torch.nn.Module):
         
         RC = torch.mul(self.act(primal_grad), il) + torch.mul(-self.act(-primal_grad), iu)
         
-        rc_contribution_lower = torch.where(RC>0,l,u)
+        rc_contribution_lower = torch.where(RC>0,l,0.0)
         rc_contribution_lower = torch.mul(RC,rc_contribution_lower)
         rc_contribution_lower = torch.sum(rc_contribution_lower)
         
@@ -1092,8 +1092,23 @@ class r_gap(torch.nn.Module):
         top_part = torch.abs(quad_term + lin_term - vio_term - rc_contribution)
 
         # top_part = torch.abs(quad_term + lin_term + vio_term)
-        # print('Obj: ',top_part)
+        print('Obj abs gap: ',top_part)
         bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term))
+        print(f'Primal: {lin_term.item()+0.5*quad_term.item()} - Dual: {vio_term.item()-0.5*quad_term.item()}=  {(quad_term + lin_term - vio_term).item()}       ------  RCC: {rc_contribution}    1/2xTQx: {0.5*quad_term.item()}')
+        
+        
+        
+        # rc_contribution = torch.where(RC>0,l,u)
+        # rc_contribution = torch.mul(RC,rc_contribution)
+        # rc_contribution = torch.sum(rc_contribution)
+        # Axb = torch.mul(y,torch.sparse.mm(A,x)- b.unsqueeze(-1))
+        # Axb = torch.norm(Axb,1)
+        # top_part = torch.abs(quad_term + lin_term - vio_term - rc_contribution) 
+        # print(f'abs gap: {top_part}')
+        
+        
+        
+        
         # bot_part=torch.tensor(8176.4)
         # bot_part = 1.0 + torch.max(torch.norm(Q,float('inf')) , torch.max(torch.linalg.vector_norm(c,float('inf')) + torch.linalg.vector_norm(b,float('inf'))))
         # bot_part = torch.tensor(1e+4)
@@ -1381,6 +1396,7 @@ class r_gap_general(torch.nn.Module):
         self.eta_opt = eta_opt
         self.norm = norm
         
+        
     def forward(self,Q,A,AT,b,c,x,y,Iy, il, iu,l,u):
         xt = torch.transpose(x,0,1)
         qx = torch.matmul(Q,x)
@@ -1424,7 +1440,7 @@ class r_gap_general(torch.nn.Module):
         # top_part = torch.abs(quad_term + lin_term - vio_term - rc_contribution)
         # top_part = torch.abs(quad_term + lin_term - vio_term )+ rc_contribution + Axb
         top_part = torch.abs(quad_term + lin_term - vio_term - rc_contribution) 
-
+        print(f'abs gap: {top_part}')
 
 
 
@@ -1438,9 +1454,13 @@ class r_gap_general(torch.nn.Module):
         # return top_part/self.eta_opt
         
 
-        # bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term))
         # bot_part = 1.0 + torch.norm(Q,self.mode)
+        # bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term))
         bot_part = self.eta_opt
+        if self.eta_opt is None:
+            bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term))
+        
+        
 
         return top_part/bot_part
     

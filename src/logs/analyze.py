@@ -4,12 +4,17 @@
 import os
 import json
 
+import argparse
+parser = argparse.ArgumentParser(description='Process some integers.')
+parser.add_argument('--type','-t', type=str, default='')
+args = parser.parse_args()
 
 
 # filters='8938'
 filters='mm'
 filters='8785'
 filters='8906'
+filters=args.type
 
 def read_json(fnm):
     # Opening JSON file

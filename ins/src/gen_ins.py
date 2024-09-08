@@ -1,6 +1,9 @@
 import random
 random.seed(0)
 import os
+import gurobipy as gp
+import numpy as np
+import random
 
 def gen_cont_uniform_pert(pert_range=0.1, ori_ins = '../train/CONT-201.QPS', indx = 0):
     uni_pert = 1.0+random.random()*pert_range* (1-random.randint(0, 1)*2)
@@ -707,9 +710,67 @@ def pert_ins(pert_range=0.1, ori_ins = '../qplib_qps/QPLIB_8906.mps', indx = 0,
     fout.close()
 
 
+import time
+np.random.seed(0)
+random.seed(0)
+def gen_ins(indx = 0, identifier='syn',n=5000,m=5000,sat=0.9,
+            density=0.1,ub=1.0,
+            ):
+    tar_ins = f'{identifier}_{indx}.mps'
+    if not os.path.exists(f'../gen_train_{identifier}'):
+        os.mkdir(f'../gen_train_{identifier}')
+    out_file = f'../gen_train_{identifier}/{tar_ins}'
+    # construct model
+    model = gp.Model(tar_ins)
+    model.Params.OutputFlag=0
+    # add vars
+    v_time = time.time()
+    l_coeff = np.random.normal(size=(n),loc=3,scale=1).tolist()
+    q_coeff = np.random.normal(size=(n),loc=4,scale=2).tolist()
+    for i in range(n):
+        if q_coeff[i]<0.1:
+            q_coeff[i] = 0.1
+    variables = []
+    for i in range(n):
+        tmp = model.addVar(lb=0, ub=ub, name=f"x_{i}")
+        variables.append(tmp)
+    print(f'var added, time: {time.time()-v_time}')
+    # construct objective
+    v_time = time.time()
+    model.setObjective(gp.quicksum(l_coeff[i]*variables[i]+q_coeff[i]*variables[i]*variables[i] for i in range(n)), gp.GRB.MINIMIZE)
+    print(f'objective added, time: {time.time()-v_time}')
+    # construct A
+    v_time = time.time()
+    
+    rhs=[]
+    cos=[]
+    for i in range(m):
+        sums = 0.
+        expr = gp.LinExpr()
+        idf = np.random.rand(n)
+        co = np.random.normal(size=(n),loc=2,scale=1)
+        for j in range(n):
+            if idf[j]<=density:
+                expr += variables[j]*co[j]
+                sums += ub * co[j]
+        cos.append(expr)
+        rhs.append(max(sums*sat,0.0))
+    
+    model.addConstrs(cos[i]>=rhs[i] for i in range(m))
+    print(f'constraint added, time: {time.time()-v_time}')
+    
+    # model.optimize()
+    # if model.Status!=2:
+    #     print('Infeasible model')
+    # else:
+    #     print('OK,save')
+    model.write(out_file)
+    
+    
+import multiprocessing
 
 
-for i in range(100):
+# for i in range(1):
     # gen_cont_uniform_pert(indx = i)
     # gen_8938(indx = i)
 
@@ -720,5 +781,14 @@ for i in range(100):
     # pert_ins(indx=i,ori_ins = '../qplib_qps/QPLIB_8785.mps',identifier ='8785',)
     # pert_ins(pert_range=0,indx=i,ori_ins = '../qplib_qps/twod.mps',identifier ='twod',)
     # pert_ins(indx=i,ori_ins = '../qplib_qps/QPLIB_3913.mps',identifier ='3913',)
-    pert_ins(indx=i,ori_ins = '../qplib_qps/QPLIB_8845.mps',identifier ='8845',)
-    pert_ins(indx=i,ori_ins = '../qplib_qps/rqp1_nqc.mps',identifier ='rqp1',)
+    # pert_ins(indx=i,ori_ins = '../qplib_qps/QPLIB_8845.mps',identifier ='8845',)
+    # pert_ins(indx=i,ori_ins = '../qplib_qps/rqp1_nqc.mps',identifier ='rqp1',)
+    # gen_ins(indx=i)
+    
+nworker=10
+pool = multiprocessing.Pool(nworker)
+    
+for i in range(100):
+    p = pool.apply_async(gen_ins, (i,'synsmall',1000,1000,0.9,0.6,))  
+pool.close()
+pool.join()

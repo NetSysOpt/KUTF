@@ -53,6 +53,10 @@ if int(config['usedual']) == 0:
 # m = PDQP_Net_AR(1,1,128,max_k = max_k, threshold = 1e-8,nlayer=8).to(device)
 m = None
 
+eta_opt=None
+# if 'eta_opt' in config:
+#     eta_opt = float(config['eta_opt'])
+
 ident = f'k{max_k}_{nlayer}'
 
 if model_mode == 0:
@@ -64,7 +68,8 @@ elif model_mode == 2:
     m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype='linf',use_dual=use_dual).to(device)
     ident += '_ARgeq'
 
-modf = relKKT_real()
+# modf = relKKT_real()
+modf = relKKT_general(mode = 'linf',eta_opt = eta_opt)
 # modf = relKKT_general(type_modef)
 
 # m = PDQP_Net_AR(1,1,128,max_k = 30, threshold = 1e-4,nlayer=1).to(device)

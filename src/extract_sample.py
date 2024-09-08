@@ -6,6 +6,14 @@ import pickle
 import random
 random.seed(0)
 import multiprocessing
+
+
+
+import argparse
+parser = argparse.ArgumentParser(description='Process some integers.')
+parser.add_argument('--type','-t', type=str, default='')
+args = parser.parse_args()
+
 train_tar_dir = '../pkl/train'
 valid_tar_dir = '../pkl/valid'
 
@@ -34,6 +42,8 @@ mode = 'qplib8785'
 mode = 'qplib8906'
 mode = 'qplib3913'
 mode = 'qplib8845'
+mode = 'syn'
+mode = args.type
 ident = ''
 train_files = os.listdir(train_ori_dir)
 valid_files = os.listdir(valid_ori_dir)
@@ -146,6 +156,7 @@ for fi in old_files:
     os.remove(f"{train_tar_dir}/{fi}")
 failed = 0
 
+failed_ins = []
 
 
 with alive_bar(len(train_files),title=f"Generating Training samples") as bar:
@@ -198,6 +209,7 @@ with alive_bar(len(train_files),title=f"Generating Training samples") as bar:
         except:
             print(f'skip this file {fnm}')
             failed+=1
+            failed_ins.append(fnm)
             # quit()
         bar()
 
@@ -243,6 +255,7 @@ with alive_bar(len(valid_files),title=f"Generating Validating samples") as bar:
         except:
             print(f'skip this file {fnm}')
             failed+=1
+            failed_ins.append(fnm)
             # quit()
         bar()
     
@@ -266,3 +279,4 @@ if len(valid_files) == 0:
         os.rename(ori_name, tar_name)
 
 print(f'Failed: {failed}')
+print(failed_ins)

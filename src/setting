@@ -20,7 +20,7 @@ end twod
 8845
 max_k = 1
 nlayer = 5
-net_width = 256
+net_width = 512
 lr = 1e-5
 Contu = 1
 choose_weight = 0
@@ -30,19 +30,19 @@ usedual = 1
 pareto = 0
 draw = 1
 accum_loss = 1
-eta_opt = 60000
+eta_opt = 1000000
 inf_time = 1
-div = 1.4
+div = 0.9
 gpu = 0
 end 8845
 
 
 8906
 max_k = 1
-nlayer = 4
+nlayer = 5
 net_width = 512
-lr = 1e-7
-Contu = 1
+lr = 1e-6
+Contu = 0
 choose_weight = 0
 model_mode = 2
 mode = qplib_8906
@@ -50,7 +50,7 @@ usedual = 1
 pareto = 0
 draw = 1
 accum_loss = 1
-eta_opt = 1500000
+eta_opt = 15000
 inf_time = 1
 div = 2.1
 end 8906
@@ -71,3 +71,41 @@ accum_loss = 1
 eta_opt = 40
 inf_time = 1
 end 3913
+
+
+syn
+max_k = 1
+nlayer = 4
+net_width = 512
+lr = 1e-6
+Contu = 1
+choose_weight = 0
+model_mode = 2
+mode = syn
+usedual = 1
+pareto = 0
+draw = 1
+accum_loss = 1
+eta_opt = 10000
+inf_time = 1
+div = 2.1
+end syn
+
+
+synsmall
+max_k = 1
+nlayer = 4
+net_width = 256
+lr = 1e-7
+Contu = 1
+choose_weight = 0
+model_mode = 2
+mode = synsmall
+usedual = 1
+pareto = 0
+draw = 1
+accum_loss = 1
+eta_opt = 1000
+inf_time = 3
+div = 2.1
+end synsmall
