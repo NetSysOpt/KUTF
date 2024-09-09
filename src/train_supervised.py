@@ -164,7 +164,7 @@ else:
     if len(train_files) ==1:
         for i in range(20):
             train_files.append(train_files[0])
-    ident += '_{mode}'
+    ident += f'_{mode}'
 
 
 loss_func = torch.nn.MSELoss()
