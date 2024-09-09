@@ -785,10 +785,18 @@ import multiprocessing
     # pert_ins(indx=i,ori_ins = '../qplib_qps/rqp1_nqc.mps',identifier ='rqp1',)
     # gen_ins(indx=i)
     
-nworker=10
+nworker=20
 pool = multiprocessing.Pool(nworker)
     
-for i in range(100):
-    p = pool.apply_async(gen_ins, (i,'synsmall',1000,1000,0.9,0.6,))  
+for i in range(200):
+    # p = pool.apply_async(gen_ins, (i,'synsmall',1000,1000,0.9,0.6,))  
+    # p = pool.apply_async(gen_ins, (i,'synlarge',30000,30000,0.8,0.01,))  
+    # p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_5527.mps', i, '5527',True,True,False,False))  
+    # p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_5543.mps', i, '5543',True,True,False,False))  
+    # p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_5924.mps', i, '5924',True,True,False,False))  
+    p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_3547.mps', i, '3547',True,True,False,False))  
+    p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_3698.mps', i, '3698',True,True,False,False))  
+    p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_3708.mps', i, '3708',True,True,False,False))  
+    # p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_3913.mps', i, '3913',True,True,False,False))  
 pool.close()
 pool.join()

@@ -76,7 +76,7 @@ end 3913
 syn
 max_k = 1
 nlayer = 4
-net_width = 512
+net_width = 256
 lr = 1e-6
 Contu = 1
 choose_weight = 0
@@ -109,3 +109,100 @@ eta_opt = 1000
 inf_time = 3
 div = 2.1
 end synsmall
+
+
+
+
+5527
+max_k = 1
+nlayer = 2
+net_width = 256
+lr = 1e-5
+Contu = 1
+choose_weight = 0
+model_mode = 2
+mode = qplib_5527
+usedual = 1
+pareto = 0
+draw = 1
+accum_loss = 1
+eta_opt = 30000000
+inf_time = 1
+div = 2.1
+end 5527
+
+
+
+5543
+max_k = 1
+nlayer = 4
+net_width = 512
+lr = 1e-5
+Contu = 0
+choose_weight = 0
+model_mode = 2
+mode = qplib_5543
+usedual = 1
+pareto = 0
+draw = 1
+accum_loss = 1
+eta_opt = 30000000
+inf_time = 1
+end 5543
+
+
+
+5924
+max_k = 1
+nlayer = 4
+net_width = 512
+lr = 1e-4
+Contu = 0
+choose_weight = 0
+model_mode = 2
+mode = qplib_5924
+usedual = 1
+pareto = 0
+draw = 1
+accum_loss = 1
+eta_opt = 60000
+inf_time = 1
+end 5924
+
+
+
+3547
+max_k = 1
+nlayer = 2
+net_width = 512
+lr = 1e-5
+Contu = 1
+choose_weight = 0
+model_mode = 2
+mode = qplib_3547
+usedual = 1
+pareto = 0
+draw = 1
+accum_loss = 1
+eta_opt = 0.8
+div = 3.1
+inf_time = 1
+end 3547
+
+
+3698
+max_k = 1
+nlayer = 2
+net_width = 512
+lr = 1e-4
+Contu = 0
+choose_weight = 0
+model_mode = 2
+mode = qplib_3698
+usedual = 1
+pareto = 0
+draw = 1
+accum_loss = 1
+eta_opt = 300
+inf_time = 1
+end 3698

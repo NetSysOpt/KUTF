@@ -130,12 +130,16 @@ else:
     train_files = os.listdir(train_ori_dir)
     valid_files = os.listdir(valid_ori_dir)
 
-if 'qplib' in mode:
-    flitt = set(os.listdir('/home/lxyang/git/pdqpnet/transformed_ins/train'))
-    for ff in train_files:
-        pdd = f'/home/lxyang/git/pdqpnet/transformed_ins/train/{ff}'
-        if ff not in flitt:
-            print(f'file missing: {ff}')
+flitt = set(os.listdir('/home/lxyang/git/pdqpnet/transformed_ins/train'))
+for ff in train_files:
+    mode1 = mode.replace('qplib','')
+    pdd = f'/home/lxyang/git/pdqpnet/transformed_ins/train/{ff}'
+    if ff not in flitt:
+        # print(f'file missing: {ff}')
+        fdir = f'../../../ins/gen_train_{mode1}/{ff}'
+        st = 'julia scripts/solve.jl'
+        st = f'{st} --instance_path={fdir} --output_directory=../../../logs --time_sec_limit=3600 --solve=0'
+        print(st)
 
     
 cont = input("Proceed? (y/N)")

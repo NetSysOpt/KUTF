@@ -74,7 +74,7 @@ m = None
 ident = f'k{max_k}_{nlayer}'
 
 type_modef = 'linf'
-# type_modef = 'l2'
+type_modef = 'l2'
 
 
 if model_mode == 0:
@@ -180,6 +180,7 @@ else:
 
 
 loss_func = torch.nn.MSELoss()
+# optimizer = torch.optim.SGD(m.parameters(), lr=lr1)
 optimizer = torch.optim.Adam(m.parameters(), lr=lr1)
 max_epoch = 1000000
 best_loss = 1e+20

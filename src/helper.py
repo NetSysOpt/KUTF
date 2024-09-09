@@ -1482,6 +1482,7 @@ def inference(m,fnm,epoch,valid_tar_dir,pareto,device,modf,autoregression_iterat
         print(f'primal_res: {prim_res.item()}_{itr}   dual_res: {dual_res.item()}   gaps: {gaps.item()}')
         azv = torch.zeros(x_pred.shape).to(device)
         print(f'    l2 norm err: {torch.norm(x_pred-x,2)}      0\'s l2 norm err: {torch.norm(azv-x,2)}\n\n')
+        print('---------------\n\n')
 
         v_feat = x_pred.detach().clone()
         c_feat = y_pred.detach().clone()

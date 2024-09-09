@@ -14,7 +14,9 @@ args = parser.parse_args()
 filters='mm'
 filters='8785'
 filters='8906'
-filters=args.type
+filters=args.type.split(',')
+filters = [x for x in filters if x!='']
+
 
 def read_json(fnm):
     # Opening JSON file
@@ -36,15 +38,17 @@ ori_files = [x for x in ori_files if '.json' in x and '.gz' not in x]
 for fnm in ori_files:
     if fnm not in file_map:
         file_map[fnm] = []
-    file_map[fnm].append([-1,-1])
+    file_map[fnm].append([-1,-1,-1])
     logs = read_json(f'{ori_log}/{fnm}')
     itnm = logs['iteration_count']
     tttm = logs['solve_time_sec']
+    tprimal = logs['solution_stats']['convergence_information'][0]['primal_objective']
     # print(logs)
     # print(itnm)
     # print(tttm)
     file_map[fnm][0][0] = itnm
     file_map[fnm][0][1] = tttm
+    file_map[fnm][0][2] = tprimal
 
 wms_files1 = os.listdir('./warmstart')
 
@@ -58,43 +62,44 @@ wms_files = [x for x in wms_files1 if '.json' in x and '.gz' not in x]
 for fnm in wms_files:
     if fnm not in file_map:
         file_map[fnm] = []
-    file_map[fnm].append([-1,-1])
+    file_map[fnm].append([-1,-1,-1])
     logs = read_json(f'./warmstart/{fnm}')
     itnm = logs['iteration_count']
     tttm = logs['solve_time_sec']
+    tprimal = logs['solution_stats']['convergence_information'][0]['primal_objective']
     # print(logs)
     # print(itnm)
     # print(tttm)
     file_map[fnm][-1][0] = itnm
     file_map[fnm][-1][1] = tttm
+    file_map[fnm][-1][2] = tprimal
     
 
-for pro_folder in to_process:
+# for pro_folder in to_process:
+#     wms_files1 = os.listdir(f'./warmstart/{pro_folder}')
+#     folder_names.append(pro_folder)
+#     wms_files = [x for x in wms_files1 if '.json' in x and '.gz' not in x]
 
-    wms_files1 = os.listdir(f'./warmstart/{pro_folder}')
-    folder_names.append(pro_folder)
-    wms_files = [x for x in wms_files1 if '.json' in x and '.gz' not in x]
+#     for fnm in wms_files:
+#         if fnm not in file_map:
+#             file_map[fnm] = []
+#         file_map[fnm].append([-1,-1])
+#         logs = read_json(f'./warmstart/{pro_folder}/{fnm}')
+#         itnm = logs['iteration_count']
+#         tttm = logs['solve_time_sec']
+#         # print(logs)
+#         # print(itnm)
+#         # print(tttm)
+#         file_map[fnm][-1][0] = itnm
+#         file_map[fnm][-1][1] = tttm
 
-    for fnm in wms_files:
-        if fnm not in file_map:
-            file_map[fnm] = []
-        file_map[fnm].append([-1,-1])
-        logs = read_json(f'./warmstart/{pro_folder}/{fnm}')
-        itnm = logs['iteration_count']
-        tttm = logs['solve_time_sec']
-        # print(logs)
-        # print(itnm)
-        # print(tttm)
-        file_map[fnm][-1][0] = itnm
-        file_map[fnm][-1][1] = tttm
-
-ntypes = len(file_map[fnm])
+ntypes = 2
 
 
 f = open('res.csv','w')
 st = f'ins ori_time ori_iter '
 for ff in folder_names:
-    st+=f'{ff}_time ratio {ff}_iter ratio '
+    st+=f'{ff}_time ratio {ff}_iter ratio PDQP_primal ws_primal'
 st+='\n'
 print(st)
 f.write(st)
@@ -102,6 +107,8 @@ f.write(st)
 # all_rat2 = 0.0
 all_rats1=[0]*ntypes
 all_rats2=[0]*ntypes
+
+
 
 keys = []
 for fnm in file_map:
@@ -112,8 +119,13 @@ if filters=='mm':
     tars_sums = os.listdir('/home/lxyang/git/pdqpnet/pkl/valid')
     keys = [x.replace('.QPS.pkl','_summary.json') for x in tars_sums]
 elif len(filters)!=0:
-    keys = [x for x in keys if filters in x]
+    keys_new = []
+    for ft in filters:
+        keys_new += [x for x in keys if ft in x]
+    keys = keys_new
 
+
+processed = 0
 for fnm in keys:
 
     print(fnm,file_map[fnm])
@@ -129,14 +141,15 @@ for fnm in keys:
 
         ratio1 = (file_map[fnm][0][0] - file_map[fnm][idx][0])/(file_map[fnm][0][0]+1e-8)
         all_rats2[idx] +=ratio1
-        st += f'{file_map[fnm][idx][0]} {round(ratio1*100,2)}% '
+        st += f'{file_map[fnm][idx][0]} {round(ratio1*100,2)}% {file_map[fnm][0][2]} {file_map[fnm][idx][2]}'
+        processed+=1
     st+='\n'
     print(st)
     f.write(st)
 
 for idx in range(1,len(all_rats2)):
-    all_rats1[idx] /=len(file_map)
-    all_rats2[idx] /=len(file_map)
+    all_rats1[idx] /=processed
+    all_rats2[idx] /=processed
 st = f'avg / / '
 for idx in range(1,len(all_rats2)):
     st += f'/ {all_rats1[idx]} / {all_rats2[idx]} '
