@@ -765,6 +765,68 @@ def gen_ins(indx = 0, identifier='syn',n=5000,m=5000,sat=0.9,
     # else:
     #     print('OK,save')
     model.write(out_file)
+
+
+
+def gen_svm(indx = 0, identifier='small',n=1000,m=1000,
+            density=0.15, lbd=0.1
+            ):
+    tar_ins = f'svm{identifier}_{indx}.mps'
+    if not os.path.exists(f'../gen_train_svm{identifier}'):
+        os.mkdir(f'../gen_train_svm{identifier}')
+    out_file = f'../gen_train_svm{identifier}/{tar_ins}'
+    # construct model
+    model = gp.Model(tar_ins)
+    model.Params.OutputFlag=0
+    # add vars
+    v_time = time.time()
+    variables = []
+    variables_t = []
+    # add x
+    for i in range(n):
+        tmp = model.addVar(lb=-float('inf'), ub=float('inf'), name=f"x_{i}")
+        variables.append(tmp)
+    # add t
+    for i in range(m):
+        tmp = model.addVar(lb=0, ub=float('inf'), name=f"t_{i}")
+        variables_t.append(tmp)
+    print(f'var added, time: {time.time()-v_time}')
+    # construct objective
+    v_time = time.time()
+    model.setObjective(gp.quicksum(lbd*variables_t[j] for j in range(m))+gp.quicksum(variables[i]*variables[i] for i in range(n)), gp.GRB.MINIMIZE)
+    print(f'objective added, time: {time.time()-v_time}')
+    # construct A
+    v_time = time.time()
+    
+    rhs=[]
+    cos=[]
+    for i in range(m):
+        expr = gp.LinExpr()
+        bi = -1.0
+        if i<=m//2:
+            bi = 1.0
+
+        idf = np.random.rand(n)
+        if i<=m//2:
+            co = np.random.normal(size=(n),loc=1./n,scale=1./n)
+        else:
+            co = np.random.normal(size=(n),loc=-1./n,scale=1./n)
+        for j in range(n):
+            if idf[j]<=density:
+                expr -= variables[j]*co[j]
+        expr += variables_t[i]
+        cos.append(expr)
+        rhs.append(1.0)
+    
+    model.addConstrs(cos[i]>=rhs[i] for i in range(m))
+    print(f'constraint added, time: {time.time()-v_time}')
+    
+    # model.optimize()
+    # if model.Status!=2:
+    #     print('Infeasible model')
+    # else:
+    #     print('OK,save')
+    model.write(out_file)
     
     
 import multiprocessing
@@ -785,18 +847,25 @@ import multiprocessing
     # pert_ins(indx=i,ori_ins = '../qplib_qps/rqp1_nqc.mps',identifier ='rqp1',)
     # gen_ins(indx=i)
     
+
 nworker=20
 pool = multiprocessing.Pool(nworker)
     
-for i in range(200):
-    # p = pool.apply_async(gen_ins, (i,'synsmall',1000,1000,0.9,0.6,))  
-    # p = pool.apply_async(gen_ins, (i,'synlarge',30000,30000,0.8,0.01,))  
+for i in range(500):
+    # p = pool.apply_async(gen_ins, (i,'synsmall',1000,1000,0.8,0.3,))  
+    # p = pool.apply_async(gen_ins, (i,'synmid',5000,5000,0.8,0.1,))  
+    # p = pool.apply_async(gen_ins, (i,'synlarge',5000,20000,0.99,0.05,))  
+    p = pool.apply_async(gen_svm, (i,'small',256,10000,0.15,))  
+    p = pool.apply_async(gen_svm, (i,'mid',512,50000,0.15,))  
+    p = pool.apply_async(gen_svm, (i,'large',1024,100000,0.15,))  
     # p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_5527.mps', i, '5527',True,True,False,False))  
+    # p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_8845.mps', i, '8845',True,True,False,False))  
+    # p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_8559.mps', i, '8559',True,True,False,False))  
     # p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_5543.mps', i, '5543',True,True,False,False))  
     # p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_5924.mps', i, '5924',True,True,False,False))  
-    p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_3547.mps', i, '3547',True,True,False,False))  
-    p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_3698.mps', i, '3698',True,True,False,False))  
-    p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_3708.mps', i, '3708',True,True,False,False))  
+    # p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_3547.mps', i, '3547',True,True,False,False))  
+    # p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_3698.mps', i, '3698',True,True,False,False))  
+    # p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_3708.mps', i, '3708',True,True,False,False))  
     # p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_3913.mps', i, '3913',True,True,False,False))  
 pool.close()
 pool.join()

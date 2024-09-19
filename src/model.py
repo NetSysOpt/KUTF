@@ -225,7 +225,7 @@ class PDQP_Net_AR_geq(torch.nn.Module):
         self.net.apply(init_weights)
         divide_weights(self.net,div=div,div_bias=True)
 
-        self.qual_func = relKKT_general(tfype,eta_opt)
+        self.qual_func = relKKT_general(tfype,eta_opt,True)
             
         # self.final_out = proj_x_no_mlp(1)
 
@@ -1340,7 +1340,7 @@ class r_primal_general(torch.nn.Module):
         var_vio = torch.mul(self.relu(l-x), il) + torch.mul(self.relu(x-u), iu)
         part_2 = torch.linalg.vector_norm(torch.cat((var_vio,cons_vio),0),self.mode)
         if self.norm:
-            part_3 = 1.0 + torch.max(torch.linalg.vector_norm(Ax,self.mode),torch.linalg.vector_norm(b,self.mode))
+            part_3 = 1.0 + torch.max(torch.linalg.vector_norm(Ax,self.mode),torch.linalg.vector_norm(b,self.mode)).item()
         else:
             part_3 = 1.0 + torch.linalg.vector_norm(b,self.mode)
             # part_3 = 1.0 
@@ -1376,7 +1376,7 @@ class r_dual_general(torch.nn.Module):
         top_part = torch.linalg.vector_norm(torch.cat((RCV, DR),0),self.mode)
         
         if self.norm:
-            bot_part = 1.0 + torch.max(torch.linalg.vector_norm(Qx,self.mode),torch.max(torch.linalg.vector_norm(ATy,self.mode),torch.linalg.vector_norm(c,2)))
+            bot_part = 1.0 + torch.max(torch.linalg.vector_norm(Qx,self.mode),torch.max(torch.linalg.vector_norm(ATy,self.mode),torch.linalg.vector_norm(c,2))).item()
         else:
             bot_part = 1.0 + torch.linalg.vector_norm(c,self.mode)
             # bot_part = 1.0 
@@ -1456,9 +1456,11 @@ class r_gap_general(torch.nn.Module):
 
         # bot_part = 1.0 + torch.norm(Q,self.mode)
         # bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term))
-        bot_part = self.eta_opt
-        if self.eta_opt is None:
-            bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term))
+        # bot_part = self.eta_opt
+        # if self.eta_opt is None:
+        #     bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term)).item()
+        bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term)).item()
+        # bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term))
         
         
 
@@ -1567,5 +1569,6 @@ class relKKT_general(torch.nn.Module):
         res = t1+t2+t3
         # res = t1+t2
         # res = t2+t3
+        # res = t3
         # res = torch.max(t3,torch.max(t2,t1))
         return res,t1,t2,t3

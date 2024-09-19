@@ -9,7 +9,7 @@ modf = relKKT_general(mode = '2',norm=True)
 tar = '/home/lxyang/git/pdqpnet/pkl/8906_valid/QPLIB_8906_17.mps.pkl'
 tar = '/home/lxyang/git/pdqpnet/pkl/8845_valid/QPLIB_8845_6.mps.pkl'
 # tar = '/home/lxyang/git/pdqpnet/pkl/3913_valid/QPLIB_3913_256.mps.pkl'
-tar = '/home/lxyang/git/pdqpnet/pkl/8906_valid/QPLIB_8906_459.mps.pkl'
+# tar = '/home/lxyang/git/pdqpnet/pkl/8906_valid/QPLIB_8906_459.mps.pkl'
 
 
 perts=torch.randn(size=(400,))

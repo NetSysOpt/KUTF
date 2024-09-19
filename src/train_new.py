@@ -181,7 +181,7 @@ else:
 
 loss_func = torch.nn.MSELoss()
 # optimizer = torch.optim.SGD(m.parameters(), lr=lr1)
-optimizer = torch.optim.Adam(m.parameters(), lr=lr1)
+optimizer = torch.optim.AdamW(m.parameters(), lr=lr1)
 max_epoch = 1000000
 best_loss = 1e+20
 flog = open('../logs/training_log.log','w')

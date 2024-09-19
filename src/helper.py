@@ -1488,6 +1488,28 @@ def inference(m,fnm,epoch,valid_tar_dir,pareto,device,modf,autoregression_iterat
         c_feat = y_pred.detach().clone()
 
 
+    # compute possible primal_weight
+    ATy = torch.sparse.mm(AT,y) 
+    print(ATy.shape,c.shape)
+    delta_x = -c+ATy
+
+    delta_y = torch.sparse.mm(A,delta_x)-b
+    pw = torch.norm(delta_x,2)/torch.norm(delta_y,2).item()
+    print(pw)
+    
+
+    cb = torch.norm(c,2)/torch.norm(b,2)
+    pw2 = torch.norm(y_pred,2)/torch.norm(x_pred,2)
+    pw2 = 0.2*torch.log(pw2)+0.8*cb
+    pw2 = torch.exp(pw2).item()
+    print(pw2)
+
+    pw3 = 0.2*torch.log(gaps)+0.8*cb
+    pw3 = torch.exp(pw3).item()
+    print(pw3)
+
+
+
 
     # compute primal obj
     # compute_obj(Q,c,x_pred,y_pred)
@@ -1505,6 +1527,11 @@ def inference(m,fnm,epoch,valid_tar_dir,pareto,device,modf,autoregression_iterat
     for xv in y_pred:
         st = st+f'{xv.item()} '
     st = st + '\n'
+    ff.write(st)
+    ff.close()
+    
+    ff = open(f'../predictions/primalweight_{fnm}.sol','w')
+    st = f'{pw} {pw2} {pw3}\n'
     ff.write(st)
     ff.close()
 

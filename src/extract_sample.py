@@ -137,8 +137,8 @@ for ff in train_files:
     if ff not in flitt:
         # print(f'file missing: {ff}')
         fdir = f'../../../ins/gen_train_{mode1}/{ff}'
-        st = 'julia scripts/solve.jl'
-        st = f'{st} --instance_path={fdir} --output_directory=../../../logs --time_sec_limit=3600 --solve=0'
+        st = 'julia scripts/solve_save.jl'
+        st = f'{st} --instance_path={fdir} --output_directory=../../../logs --time_sec_limit=3600 --solve=1'
         print(st)
 
     
@@ -274,7 +274,7 @@ if len(valid_files) == 0:
     for fi in old_files:
         os.remove(f"{tar_folder}{fi}")
     length = len(sample_files)
-    rate = 0.1
+    rate = 0.05
     random.shuffle(sample_files)
     print(f'Splitting into {int(round(length*(1-rate)))} training files, {int(round(length*rate))} validating files')
     for sample in sample_files[:int(round(length*rate))]:

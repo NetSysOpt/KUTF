@@ -3,7 +3,7 @@
 # json file
 import os
 import json
-
+import gzip
 import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--type','-t', type=str, default='')
@@ -20,7 +20,11 @@ filters = [x for x in filters if x!='']
 
 def read_json(fnm):
     # Opening JSON file
-    f = open(fnm)
+    if '.gz' in fnm:
+        f = gzip.open(fnm)
+    else:
+        f = open(fnm)
+        
     # returns JSON object as 
     # a dictionary
     data = json.load(f)
@@ -38,7 +42,8 @@ ori_files = [x for x in ori_files if '.json' in x and '.gz' not in x]
 for fnm in ori_files:
     if fnm not in file_map:
         file_map[fnm] = []
-    file_map[fnm].append([-1,-1,-1])
+    file_map[fnm].append([-1,-1,-1,-1,-1,-1])
+    print(f'{ori_log}/{fnm}')
     logs = read_json(f'{ori_log}/{fnm}')
     itnm = logs['iteration_count']
     tttm = logs['solve_time_sec']
@@ -58,21 +63,36 @@ folder_names = ['warmstart']
 
 ntypes = 2
 
-wms_files = [x for x in wms_files1 if '.json' in x and '.gz' not in x]
+wms_files = [x for x in wms_files1 if '.gz'  in x]
 for fnm in wms_files:
+    print(fnm)
+    fnm = fnm.replace('.gz','')
+    fnm2 = fnm+'.gz'
+    fnm = fnm.replace('_full_log','_summary')
     if fnm not in file_map:
         file_map[fnm] = []
-    file_map[fnm].append([-1,-1,-1])
-    logs = read_json(f'./warmstart/{fnm}')
+    file_map[fnm].append([-1,-1,-1,-1,-1,-1])
+    logs = read_json(f'./warmstart/{fnm2}')
+    # print(logs.keys())
+    # for ll in logs['iteration_stats']:
+    #     print(ll)
+    #     input()
     itnm = logs['iteration_count']
     tttm = logs['solve_time_sec']
     tprimal = logs['solution_stats']['convergence_information'][0]['primal_objective']
     # print(logs)
     # print(itnm)
     # print(tttm)
+    ress = logs['iteration_stats'][0]['convergence_information'][0]
+    pres = ress['relative_l_inf_primal_residual']
+    dres = ress['relative_l_inf_dual_residual']
+    gap = ress['relative_optimality_gap']
     file_map[fnm][-1][0] = itnm
     file_map[fnm][-1][1] = tttm
     file_map[fnm][-1][2] = tprimal
+    file_map[fnm][-1][3] = pres
+    file_map[fnm][-1][4] = dres
+    file_map[fnm][-1][5] = gap
     
 
 # for pro_folder in to_process:
@@ -99,7 +119,7 @@ ntypes = 2
 f = open('res.csv','w')
 st = f'ins ori_time ori_iter '
 for ff in folder_names:
-    st+=f'{ff}_time ratio {ff}_iter ratio PDQP_primal ws_primal'
+    st+=f'{ff}_time ratio {ff}_iter ratio PDQP_primal ws_primal pres dres rgap'
 st+='\n'
 print(st)
 f.write(st)
@@ -125,6 +145,8 @@ elif len(filters)!=0:
     keys = keys_new
 
 
+ops=[0,0,0]
+
 processed = 0
 for fnm in keys:
 
@@ -143,16 +165,26 @@ for fnm in keys:
         all_rats2[idx] +=ratio1
         st += f'{file_map[fnm][idx][0]} {round(ratio1*100,2)}% {file_map[fnm][0][2]} {file_map[fnm][idx][2]}'
         processed+=1
+        
+        st+=f' {file_map[fnm][idx][3]} {file_map[fnm][idx][4]} {file_map[fnm][idx][5]}'
+        ops[0]+=file_map[fnm][idx][3]
+        ops[1]+=file_map[fnm][idx][4]
+        ops[2]+=file_map[fnm][idx][5]
+
     st+='\n'
     print(st)
     f.write(st)
+
+ops[0]=ops[0]/processed
+ops[1]=ops[1]/processed
+ops[2]=ops[2]/processed
 
 for idx in range(1,len(all_rats2)):
     all_rats1[idx] /=processed
     all_rats2[idx] /=processed
 st = f'avg / / '
 for idx in range(1,len(all_rats2)):
-    st += f'/ {all_rats1[idx]} / {all_rats2[idx]} '
+    st += f'/ {all_rats1[idx]} / {all_rats2[idx]} / / / {ops[0]} {ops[1]} {ops[2]}'
 st+='\n'
 
 f.write(st)
