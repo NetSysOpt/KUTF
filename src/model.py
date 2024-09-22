@@ -1456,10 +1456,10 @@ class r_gap_general(torch.nn.Module):
 
         # bot_part = 1.0 + torch.norm(Q,self.mode)
         # bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term))
-        # bot_part = self.eta_opt
-        # if self.eta_opt is None:
-        #     bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term)).item()
-        bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term)).item()
+        bot_part = self.eta_opt
+        if self.eta_opt is None:
+            bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term)).item()
+        # bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term)).item()
         # bot_part = 1.0 + torch.max(torch.abs(vio_term - 0.5*quad_term ),torch.abs(0.5*quad_term + lin_term))
         
         
@@ -1572,3 +1572,120 @@ class relKKT_general(torch.nn.Module):
         # res = t3
         # res = torch.max(t3,torch.max(t2,t1))
         return res,t1,t2,t3
+    
+    
+    
+    
+    
+    
+
+
+class GNN_AR_geq(torch.nn.Module):
+    def __init__(self,x_size,y_size,feat_size,max_k = 20, threshold = 1e-8,nlayer=1, 
+                 tfype='linf', use_dual=True, eta_opt = 1e+6, div=4.0):
+        super(GNN_AR_geq,self).__init__()
+        self.max_k = max_k
+        self.threshold = threshold
+        
+        x_size = 5
+        y_size = 2
+
+        self.qual_func = relKKT_general(tfype,eta_opt,True)
+        
+        
+        
+        self.x_emb = nn.Sequential(
+            nn.Linear(x_size,feat_size),
+            nn.ReLU(),
+            nn.Linear(feat_size,feat_size),
+            nn.ReLU(),
+        )
+        self.y_emb = nn.Sequential(
+            nn.Linear(y_size,feat_size),
+            nn.ReLU(),
+            nn.Linear(feat_size,feat_size),
+            nn.ReLU(),
+        )
+        
+        self.vtoc = GNN_layer(feat_size,feat_size,feat_size)
+        self.ctov = GNN_layer(feat_size,feat_size,feat_size)
+        
+            
+        self.output_module = nn.Sequential(
+            nn.Linear(feat_size,feat_size),
+            nn.ReLU(),
+            nn.Linear(feat_size,1),
+        )
+
+    def forward(self,AT,A,Q,b,c,x,y,indicator_y,indicator_x_l,indicator_x_u,l,u,
+                                AT_ori=None,A_ori=None,Q_ori=None,b_ori=None,c_ori=None,vscale=None,cscale=None,constscale=None,var_lb_ori=None,var_ub_ori=None):
+        bqual = b.squeeze(-1)
+        cqual = c.squeeze(-1)
+        bqual_ori = b_ori.squeeze(-1)
+        cqual_ori = c_ori.squeeze(-1)
+        
+        
+        
+        # extract feature for GNN
+        x = torch.cat((indicator_x_l,indicator_x_u,l,u,c),1)
+        y = torch.cat((b,indicator_y),1)
+        
+        x = self.x_emb(x)
+        y = self.x_emb(y)
+
+        y = self.vtoc(y,x,Q,AT,A,c,b)
+        x = self.ctov(x,y,Q,A,AT,c,b)
+        
+
+        scs = None
+        mult = 0.0
+        
+        sc = self.qual_func(Q_ori,A_ori,AT_ori,bqual_ori,cqual_ori,x,y,indicator_y,indicator_x_l,indicator_x_u,var_lb_ori,var_ub_ori,
+                            vscale,cscale,constscale)
+        scs = sc
+
+        return x,y,scs,mult
+        
+
+
+
+
+class GNN_layer(torch.nn.Module):
+    
+    def __init__(self,x_size, y_size, feat_size):
+        super(GNN_layer,self).__init__()
+        
+        self.emb_size = feat_size
+
+        # feature layers
+        self.feature_module_left = nn.Sequential(
+            nn.Linear(x_size,feat_size,bias=True),
+        )
+        self.feature_module_right = nn.Sequential(
+            nn.Linear(y_size,feat_size,bias=True),
+        )
+        
+        self.feature_module_final = nn.Sequential(
+            nn.ReLU(),
+            nn.Linear(feat_size,feat_size),
+        )
+
+        # output_layers
+        self.output_module =nn.Sequential(
+            nn.Linear(2*feat_size,feat_size),
+            nn.ReLU(),
+            nn.Linear(feat_size,feat_size),
+        )
+        
+        
+        
+    def forward(self,x,y,Q,A,AT,c,b):
+        prev = x
+        # X+AYW
+        x = self.feature_module_left(x)
+        y = self.feature_module_left(y)
+        joint_feature = self.feature_module_final(x+AT*y)
+        res = self.output_module(torch.cat((joint_feature,prev)))
+        
+
+        return res

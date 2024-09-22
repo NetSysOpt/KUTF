@@ -12,6 +12,8 @@ import multiprocessing
 import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--type','-t', type=str, default='')
+parser.add_argument('--start','-s', type=int, default=0)
+parser.add_argument('--end','-e', type=int, default=-1)
 args = parser.parse_args()
 
 train_tar_dir = '../pkl/train'
@@ -147,17 +149,20 @@ if not ('1' in cont or 'Y' in cont or 'y' in cont):
     quit()
     
 
-
-
-if not os.path.exists(train_tar_dir):
-    os.mkdir(train_tar_dir)
-if not os.path.exists(valid_tar_dir):
-    os.mkdir(valid_tar_dir)
-    
-old_files = os.listdir(train_tar_dir)
-print(f'Cleaning {len(old_files)} old training files')
-for fi in old_files:
-    os.remove(f"{train_tar_dir}/{fi}")
+if args.end>0:
+    train_files=train_files[args.start:args.end]
+else:
+    if not os.path.exists(train_tar_dir):
+        os.mkdir(train_tar_dir)
+    if not os.path.exists(valid_tar_dir):
+        os.mkdir(valid_tar_dir)
+        
+    old_files = os.listdir(train_tar_dir)
+    print(f'Cleaning {len(old_files)} old training files')
+    for fi in old_files:
+        os.remove(f"{train_tar_dir}/{fi}")
+        
+        
 failed = 0
 
 failed_ins = []
@@ -269,10 +274,11 @@ if len(valid_files) == 0:
     ori_folder = f'{train_tar_dir}/'
     tar_folder = f'{valid_tar_dir}/'
     sample_files = os.listdir(ori_folder)
-    old_files = os.listdir(tar_folder)
-    print(f'Cleaning {len(old_files)} old validating files')
-    for fi in old_files:
-        os.remove(f"{tar_folder}{fi}")
+    if args.end<=0:
+        old_files = os.listdir(tar_folder)
+        print(f'Cleaning {len(old_files)} old validating files')
+        for fi in old_files:
+            os.remove(f"{tar_folder}{fi}")
     length = len(sample_files)
     rate = 0.05
     random.shuffle(sample_files)

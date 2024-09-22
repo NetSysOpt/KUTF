@@ -1,7 +1,7 @@
 import gurobipy as gp
 
 base = '/home/lxyang/git/pdqpnet/ins/qplib/'
-flist = ['QPLIB_3547.lp','QPLIB_3698.lp','QPLIB_3708.lp','QPLIB_3913.lp']
+flist = ['QPLIB_3861.lp','QPLIB_3871.lp']
 
 for fdir in flist:
     fdir = base+fdir

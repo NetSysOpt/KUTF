@@ -851,13 +851,14 @@ import multiprocessing
 nworker=20
 pool = multiprocessing.Pool(nworker)
     
-for i in range(500):
+for i in range(100):
     # p = pool.apply_async(gen_ins, (i,'synsmall',1000,1000,0.8,0.3,))  
     # p = pool.apply_async(gen_ins, (i,'synmid',5000,5000,0.8,0.1,))  
     # p = pool.apply_async(gen_ins, (i,'synlarge',5000,20000,0.99,0.05,))  
-    p = pool.apply_async(gen_svm, (i,'small',256,10000,0.15,))  
-    p = pool.apply_async(gen_svm, (i,'mid',512,50000,0.15,))  
-    p = pool.apply_async(gen_svm, (i,'large',1024,100000,0.15,))  
+    # p = pool.apply_async(gen_svm, (i,'small',256,10000,0.15,))  
+    # p = pool.apply_async(gen_svm, (i,'mid',512,50000,0.15,))  
+    # p = pool.apply_async(gen_svm, (i,'large',1024,100000,0.15,))  
+    p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_8602.mps', i, '8602',True,True,False,False))  
     # p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_5527.mps', i, '5527',True,True,False,False))  
     # p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_8845.mps', i, '8845',True,True,False,False))  
     # p = pool.apply_async(pert_ins, (0.1, '../qplib_qps/QPLIB_8559.mps', i, '8559',True,True,False,False))  
