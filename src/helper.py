@@ -1409,7 +1409,7 @@ def compute_obj(Q,c,x,y):
 
     quit()
 
-
+import time
 
 def inference(m,fnm,epoch,valid_tar_dir,pareto,device,modf,autoregression_iteration):
     f_tar = gzip.open(f'{valid_tar_dir}/{fnm}','rb')
@@ -1418,6 +1418,10 @@ def inference(m,fnm,epoch,valid_tar_dir,pareto,device,modf,autoregression_iterat
     c_feat = to_pack['cf'].to(device)
     Q = to_pack['Q'].to(device)
     A = to_pack['A'].to(device)
+    
+    print('NNZ',A._nnz())
+    # quit()
+    
     AT = torch.transpose(A,0,1)
     c = to_pack['c'].to(device)
     b = to_pack['b'].to(device)
@@ -1466,9 +1470,10 @@ def inference(m,fnm,epoch,valid_tar_dir,pareto,device,modf,autoregression_iterat
         
 
     for itr in range(autoregression_iteration):
+        otime = time.time()
         x_pred,y_pred,scs,mult = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
                                                    AT_ori,A_ori,Q_ori,b_ori,c_ori,vscale,cscale,constscale,var_lb_ori,var_ub_ori)
-
+        print(f'!!!!!!!!!!!!!!!!!   Inference time: {otime-time.time()}')
         bqual = b.squeeze(-1)
         cqual = c.squeeze(-1)
 
@@ -1482,7 +1487,6 @@ def inference(m,fnm,epoch,valid_tar_dir,pareto,device,modf,autoregression_iterat
         print(f'primal_res: {prim_res.item()}_{itr}   dual_res: {dual_res.item()}   gaps: {gaps.item()}')
         azv = torch.zeros(x_pred.shape).to(device)
         print(f'    l2 norm err: {torch.norm(x_pred-x,2)}      0\'s l2 norm err: {torch.norm(azv-x,2)}\n\n')
-        print('---------------\n\n')
 
         v_feat = x_pred.detach().clone()
         c_feat = y_pred.detach().clone()
@@ -1509,6 +1513,7 @@ def inference(m,fnm,epoch,valid_tar_dir,pareto,device,modf,autoregression_iterat
     print(pw3)
 
 
+    print('---------------\n\n')
 
 
     # compute primal obj

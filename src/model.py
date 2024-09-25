@@ -110,6 +110,67 @@ class inner_loop_geq(torch.nn.Module):
         x_bar = (1.0-self.emu_beta)*x_bar + (self.emu_beta)*x_new
 
         return x_new,x_bar,y_new
+    
+    
+    
+    
+
+class inner_loop_geq_morelayer(torch.nn.Module):
+    
+    def __init__(self,x_size, y_size, feat_size):
+        super(inner_loop_geq_morelayer,self).__init__()
+        self.feat_size = feat_size
+        self.emu_gamma = torch.nn.Parameter(torch.ones(size=(1, ),requires_grad=True))
+        self.emu_eta = torch.nn.Parameter(torch.ones(size=(1, ),requires_grad=True))
+        self.emu_beta = torch.nn.Parameter(torch.ones(size=(1, ),requires_grad=True))
+        self.emu_theta = torch.nn.Parameter(torch.ones(size=(1, ),requires_grad=True))
+
+        # TO be changed
+        self.yproj = proj_y(feat_size)
+        self.xproj = proj_x(feat_size)
+
+        self.lin_1 = nn.Sequential(
+            nn.Linear(feat_size,feat_size,bias=False),
+            nn.LeakyReLU(),
+            nn.Linear(feat_size,feat_size,bias=False),
+        )
+        self.lin_3 = nn.Sequential(
+            nn.Linear(feat_size,feat_size,bias=False),
+            nn.LeakyReLU(),
+            nn.Linear(feat_size,feat_size,bias=False),
+        )
+        self.lin_4 = nn.Sequential(
+            nn.Linear(feat_size,feat_size,bias=False),
+            nn.LeakyReLU(),
+            nn.Linear(feat_size,feat_size,bias=False),
+        )
+        
+        
+    def forward(self,x,x_bar,y,Q,A,AT,c,b,indicator_y,indicator_x_l,indicator_x_u,l,u,cmat,bmat):
+
+        # start updating
+        x_md = (1.0-self.emu_beta)*x_bar + (self.emu_beta)*x
+        
+        # update x
+        x_new = x - self.emu_eta * (self.lin_3(torch.matmul(Q,x_md)) + cmat - self.lin_4(torch.matmul(AT,y)))
+        x_new = self.xproj(x_new, indicator_x_l, indicator_x_u, l, u)
+
+
+        # need to check if we want to wrap this with a linear layer
+        #       current setting seems better for the theoretical part
+        #  !Y update
+        x_delta = self.emu_theta*(x_new - x) + x_new
+        x_delta = self.emu_gamma * (bmat - self.lin_1(torch.matmul(A,x_delta))  )
+        y_new = y + x_delta
+        y_new = self.yproj(y_new, indicator_y)
+
+        # print('step sizes')
+        # print(self.emu_eta,self.emu_theta,self.emu_gamma,self.emu_beta)
+        # quit()
+
+        x_bar = (1.0-self.emu_beta)*x_bar + (self.emu_beta)*x_new
+
+        return x_new,x_bar,y_new
 
 
 class inner_loop_geq_stepsize(torch.nn.Module):
@@ -157,6 +218,59 @@ class inner_loop_geq_stepsize(torch.nn.Module):
         x_bar = (1.0-self.emu_beta)*x_bar + (self.emu_beta)*x_new
 
         return x_new,x_bar,y_new
+
+
+class PDQP_Net_geq_morelayer(torch.nn.Module):
+    def __init__(self,x_size,y_size,feat_size,nlayer=8):
+        super(PDQP_Net_geq_morelayer,self).__init__()
+
+        self.feat_size = feat_size
+
+        self.init_x = nn.Sequential(
+            nn.Linear(x_size,feat_size,bias=True),
+            nn.LeakyReLU(),
+            nn.Linear(feat_size,feat_size,bias=True),
+        )
+        self.init_y = nn.Sequential(
+            nn.Linear(y_size,feat_size,bias=True),
+            nn.LeakyReLU(),
+            nn.Linear(feat_size,feat_size,bias=True),
+        )
+
+        self.updates = nn.ModuleList()
+        for indx in range(nlayer):
+            self.updates.append(inner_loop_geq_morelayer(feat_size,feat_size,feat_size))
+
+        self.out_x = nn.Sequential(
+            nn.Linear(feat_size,feat_size,bias=True),
+            nn.LeakyReLU(),
+            nn.Linear(feat_size,1,bias=False),
+        )
+        self.out_y = nn.Sequential(
+            nn.Linear(feat_size,feat_size,bias=True),
+            nn.LeakyReLU(),
+            nn.Linear(feat_size,1,bias=False),
+        )
+        # self.out = nn.Sequential(
+        #     nn.Linear(feat_size,1,bias=False),
+        # )
+        
+    def forward(self,A,AT,Q,b,c,x,y,indicator_y,indicator_x_l,indicator_x_u,l,u):
+
+        # initial encoding
+        x = self.init_x(x)
+        y = self.init_y(y)
+        
+        x_bar = x
+        cmat = torch.matmul(c,torch.ones((1,self.feat_size),dtype = torch.float32).to(c.device))
+        bmat = torch.matmul(b,torch.ones((1,self.feat_size),dtype = torch.float32).to(b.device))
+        for index, layer in enumerate(self.updates):
+            x,x_bar,y = layer(x,x_bar,y,Q,A,AT,c,b,indicator_y,indicator_x_l,indicator_x_u,l,u,cmat,bmat)
+        x = self.out_x(x)
+        y = self.out_y(y)
+        # x = self.out(x)
+        # y = self.out(y)
+        return x,y
 
 
 class PDQP_Net_geq(torch.nn.Module):
@@ -212,16 +326,18 @@ class PDQP_Net_geq(torch.nn.Module):
         # y = self.out(y)
         return x,y
 
-
-
 class PDQP_Net_AR_geq(torch.nn.Module):
     def __init__(self,x_size,y_size,feat_size,max_k = 20, threshold = 1e-8,nlayer=1, 
-                 tfype='linf', use_dual=True, eta_opt = 1e+6, div=4.0):
+                 tfype='linf', use_dual=True, eta_opt = 1e+6, div=4.0, mode=None):
         super(PDQP_Net_AR_geq,self).__init__()
         self.max_k = max_k
         self.threshold = threshold
         
-        self.net = PDQP_Net_geq(x_size,y_size,feat_size,nlayer=nlayer)
+        if mode is not None:
+            print('USING MORE LINEAR LAYERS!!!!!!')
+            self.net = PDQP_Net_geq_morelayer(x_size,y_size,feat_size,nlayer=nlayer)
+        else:
+            self.net = PDQP_Net_geq(x_size,y_size,feat_size,nlayer=nlayer)
         self.net.apply(init_weights)
         divide_weights(self.net,div=div,div_bias=True)
 
@@ -732,14 +848,14 @@ class proj_x(torch.nn.Module):
         if indicator_x_u.shape[-1]!=1:
             indicator_x_u = indicator_x_u.unsqueeze(-1)
         # p1 = torch.cat((x,u),-1)
-        xuu = x - indicator_x_u * self.rr(self.lin_1(torch.cat((x,u),-1)))
+        # xuu = x - indicator_x_u * self.rr(self.lin_1(torch.cat((x,u),-1)))
         # p2 = torch.cat((xuu,l),-1)
-        x = xuu + indicator_x_l * self.rr(self.lin_2(torch.cat((xuu,l),-1)))
+        # x = xuu + indicator_x_l * self.rr(self.lin_2(torch.cat((xuu,l),-1)))
 
 
-        # u = u.repeat([1,self.feat_size])
-        # l = l.repeat([1,self.feat_size])
-        # x = x - indicator_x_u * self.rr(x-u) + indicator_x_l * self.rr(l-x)
+        u = u.repeat([1,self.feat_size])
+        l = l.repeat([1,self.feat_size])
+        x = x - indicator_x_u * self.rr(x-u) + indicator_x_l * self.rr(l-x)
         return x
 
 
@@ -1616,6 +1732,12 @@ class GNN_AR_geq(torch.nn.Module):
             nn.ReLU(),
             nn.Linear(feat_size,1),
         )
+            
+        self.output_module_y = nn.Sequential(
+            nn.Linear(feat_size,feat_size),
+            nn.ReLU(),
+            nn.Linear(feat_size,1),
+        )
 
     def forward(self,AT,A,Q,b,c,x,y,indicator_y,indicator_x_l,indicator_x_u,l,u,
                                 AT_ori=None,A_ori=None,Q_ori=None,b_ori=None,c_ori=None,vscale=None,cscale=None,constscale=None,var_lb_ori=None,var_ub_ori=None):
@@ -1631,10 +1753,13 @@ class GNN_AR_geq(torch.nn.Module):
         y = torch.cat((b,indicator_y),1)
         
         x = self.x_emb(x)
-        y = self.x_emb(y)
+        y = self.y_emb(y)
 
         y = self.vtoc(y,x,Q,AT,A,c,b)
         x = self.ctov(x,y,Q,A,AT,c,b)
+        
+        x = self.output_module(x)
+        y = self.output_module_y(y)
         
 
         scs = None
@@ -1684,8 +1809,8 @@ class GNN_layer(torch.nn.Module):
         # X+AYW
         x = self.feature_module_left(x)
         y = self.feature_module_left(y)
-        joint_feature = self.feature_module_final(x+AT*y)
-        res = self.output_module(torch.cat((joint_feature,prev)))
+        joint_feature = self.feature_module_final(x+torch.matmul(AT,y))
+        res = self.output_module(torch.cat((joint_feature,prev),1))
         
 
         return res

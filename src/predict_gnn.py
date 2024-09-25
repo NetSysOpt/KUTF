@@ -54,7 +54,7 @@ ident = f'k{max_k}_{nlayer}_Y'
 # type_modef = 'linf'
 type_modef = 'l2'
 
-m = GNN_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual,eta_opt=eta_opt).to(device)
+m = GNN_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual).to(device)
 ident += '_GNN'
 
 modf = relKKT_real()

@@ -67,6 +67,9 @@ elif model_mode == 1:
 elif model_mode == 2:
     m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype='linf',use_dual=use_dual).to(device)
     ident += '_ARgeq'
+elif model_mode == 3:
+    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype='linf',use_dual=use_dual,eta_opt=eta_opt,mode=0).to(device)
+    ident += '_ARgeq'
 
 # modf = relKKT_real()
 modf = relKKT_general(mode = 'linf',eta_opt = eta_opt)
