@@ -212,7 +212,7 @@ if args.sl == 0:
 if save_log:
     valid_files.sort()
     tar = f'{valid_tar_dir}/{valid_files[-1]}'
-    f_gg = open(f'../plots/distance/logs/{args.type}_{valid_files[-1]}.rec','w')
+    f_gg = open(f'../plots/distance/logs/{args.type}_{valid_files[-1]}.rec','a+')
 
 for epoch in range(last_epoch,max_epoch):
     avg_train_loss = process(m,train_files,epoch,train_tar_dir,pareto=pareto,device=device,optimizer=optimizer,choose_weight=choose_weight,autoregression_iteration=max_k,accu_loss = accum_loss)

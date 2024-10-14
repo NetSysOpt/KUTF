@@ -198,7 +198,7 @@ if args.sl == 0:
 if save_log:
     valid_files.sort()
     tar = f'{valid_tar_dir}/{valid_files[-1]}'
-    f_gg = open(f'../plots/distance/logs/{args.type}_{valid_files[-1]}_ori.rec','w')
+    f_gg = open(f'../plots/distance/logs/{args.type}_{valid_files[-1]}_ori.rec','a+')
 
 loss_log = open(f'../logs/train_{mode}_supervised.log','a+')
 for epoch in range(last_epoch,max_epoch):

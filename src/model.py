@@ -1724,7 +1724,7 @@ class GNN_AR_geq(torch.nn.Module):
         )
         
         self.vtoc = GNN_layer(feat_size,feat_size,feat_size)
-        self.ctov = GNN_layer(feat_size,feat_size,feat_size)
+        self.ctov = GNN_layer_withQ(feat_size,feat_size,feat_size)
         
             
         self.output_module = nn.Sequential(
@@ -1811,6 +1811,54 @@ class GNN_layer(torch.nn.Module):
         y = self.feature_module_left(y)
         joint_feature = self.feature_module_final(x+torch.matmul(AT,y))
         res = self.output_module(torch.cat((joint_feature,prev),1))
+        
+
+        return res
+    
+    
+
+class GNN_layer_withQ(torch.nn.Module):
+    
+    def __init__(self,x_size, y_size, feat_size):
+        super(GNN_layer_withQ,self).__init__()
+        
+        self.emb_size = feat_size
+
+        # feature layers
+        self.feature_module_left = nn.Sequential(
+            nn.Linear(x_size,feat_size,bias=True),
+        )
+        self.feature_module_right = nn.Sequential(
+            nn.Linear(y_size,feat_size,bias=True),
+        )
+        
+        self.feature_module_final = nn.Sequential(
+            nn.ReLU(),
+            nn.Linear(feat_size,feat_size),
+        )
+        
+        self.feature_module_finalQ = nn.Sequential(
+            nn.ReLU(),
+            nn.Linear(feat_size,feat_size),
+        )
+
+        # output_layers
+        self.output_module =nn.Sequential(
+            nn.Linear(3*feat_size,feat_size),
+            nn.ReLU(),
+            nn.Linear(feat_size,feat_size),
+        )
+        
+        
+        
+    def forward(self,x,y,Q,A,AT,c,b):
+        prev = x
+        # X+AYW
+        x = self.feature_module_left(x)
+        y = self.feature_module_left(y)
+        joint_feature = self.feature_module_final(x+torch.matmul(AT,y))
+        joint_feature_Q = self.feature_module_finalQ(x+torch.matmul(Q,x))
+        res = self.output_module(torch.cat((joint_feature,joint_feature_Q,prev),1))
         
 
         return res

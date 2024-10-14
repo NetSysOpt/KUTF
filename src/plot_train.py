@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 16})
 
 
 us_loss=[[],[]]
@@ -10,7 +11,6 @@ loss_log = open(f'../logs/train_{mode}_supervised.log','r')
 for line in loss_log:
     lst = line.replace('\n','').split(' ')
     lst = [float(x) for x in lst]
-    print(lst)
     sl_loss[0].append(lst[1])
     sl_loss[1].append(lst[2])
 loss_log.close()
@@ -29,19 +29,24 @@ if False:
 
     plt.plot(sl_loss[0],label='supervised trianing', linestyle='-',marker=',',c='blue')
     plt.plot(sl_loss[1],label='supervised valid', linestyle='--',marker=',',c='blue')
-plt.legend()
-# plt.ylim(0.,1.)
-plt.ylabel('KKT err')
-plt.xlabel('epoch')
-plt.yscale('log')
-plt.savefig('../plots/training/scs.png')
+    plt.legend()
+    # plt.ylim(0.,1.)
+    plt.ylabel('KKT err')
+    plt.xlabel('epoch')
+    plt.yscale('log')
+    plt.savefig('../plots/training/scs.png')
 
 
-if False:
+if True:
 
     # plot distances
     import os
-    ident = '3913'
+    ident = '8559'
+    max_iter = 100
+    # ident = '3547'
+    # max_iter = 100
+    # ident = '8845'
+    # max_iter = 100
     logs = os.listdir('../plots/distance/logs')
     logs=[x for x in logs if ident in x]
     print(logs)
@@ -55,7 +60,7 @@ if False:
             for line in f:
                 lst = line.replace('\n','').split(' ')
                 lst = [float(x) for x in lst]
-                print(lst)
+                print('Supervised ',lst)
                 ori_stat[0].append(lst[1])
                 ori_stat[1].append(lst[2])
                 ori_stat[2].append(lst[3])
@@ -65,12 +70,12 @@ if False:
                 ori_stat[6].append(lst[6]+lst[5])
             f.close()
         else:
-            # supervised
+            # unsupervised
             f=open(f'../plots/distance/logs/{l}','r')
             for line in f:
                 lst = line.replace('\n','').split(' ')
                 lst = [float(x) for x in lst]
-                print(lst)
+                print('Unsupervised ',lst)
                 us_stat[0].append(lst[1])
                 us_stat[1].append(lst[2])
                 us_stat[2].append(lst[3])
@@ -92,7 +97,7 @@ if False:
     plt.scatter(us_stat[6],us_stat[0],label='unsupervised trianing',c='red')
     plt.legend()
     plt.ylabel('KKT err')
-    plt.xlabel('distance')
+    plt.xlabel('distance to z*')
     plt.yscale('log')
     plt.savefig(f'../plots/training/{ident}_total_err.png')
 
@@ -100,8 +105,8 @@ if False:
     plt.scatter(ori_stat[6],ori_stat[1],label='supervised trianing',c='blue')
     plt.scatter(us_stat[6],us_stat[1],label='unsupervised trianing',c='red')
     plt.legend()
-    plt.ylabel('KKT err')
-    plt.xlabel('distance')
+    plt.ylabel('Primal Residual')
+    plt.xlabel('distance to z*')
     # plt.yscale('log')
     plt.savefig(f'../plots/training/{ident}_pres.png')
 
@@ -109,8 +114,8 @@ if False:
     plt.scatter(ori_stat[6],ori_stat[2],label='supervised trianing',c='blue')
     plt.scatter(us_stat[6],us_stat[2],label='unsupervised trianing',c='red')
     plt.legend()
-    plt.ylabel('KKT err')
-    plt.xlabel('distance')
+    plt.ylabel('Dual Residual')
+    plt.xlabel('distance to z*')
     # plt.yscale('log')
     plt.savefig(f'../plots/training/{ident}_dres.png')
 
@@ -118,7 +123,27 @@ if False:
     plt.scatter(ori_stat[6],ori_stat[3],label='supervised trianing',c='blue')
     plt.scatter(us_stat[6],us_stat[3],label='unsupervised trianing',c='red')
     plt.legend()
-    plt.ylabel('KKT err')
-    plt.xlabel('distance')
+    plt.ylabel('Primal-dual gap')
+    plt.xlabel('distance to z*')
     # plt.yscale('log')
     plt.savefig(f'../plots/training/{ident}_gap.png')
+    
+    plt.clf()
+    x = []
+    for i in range(len(ori_stat[3])):
+        x.append(i+1)
+    x = x[:max_iter]
+    ori_stat[3] = ori_stat[3][:max_iter]
+    plt.scatter(x,ori_stat[3],label='supervised trianing',c='blue')
+    x = []
+    for i in range(len(us_stat[3])):
+        x.append(i+1)
+    x = x[:max_iter]
+    us_stat[3] = us_stat[3][:max_iter]
+    plt.scatter(x,us_stat[3],label='unsupervised trianing',c='red')
+    plt.legend()
+    plt.ylabel('Primal-dual gap')
+    plt.xlabel('iteration')
+    plt.yscale('log')
+    plt.savefig(f'../plots/training/{ident}_gap_iter.png')
+    plt.savefig(f'../plots/training/{ident}_gap_iter.pdf', format="pdf", bbox_inches="tight")
