@@ -1294,6 +1294,7 @@ def valid(m,valid_files,epoch,valid_tar_dir,pareto,device,modf,autoregression_it
     avg_scprimal = [0.0]*autoregression_iteration
     avg_scdual = [0.0]*autoregression_iteration
     avg_scgap = [0.0]*autoregression_iteration
+    avg_hist = None
     with torch.no_grad():
         with alive_bar(len(valid_files),title=f"Validating epoch {epoch}") as bar:
             for fnm in valid_files:
@@ -1348,10 +1349,12 @@ def valid(m,valid_files,epoch,valid_tar_dir,pareto,device,modf,autoregression_it
                 v_feat = torch.zeros((v_feat.shape[0],1),dtype=torch.float32).to(device)
                 c_feat = torch.zeros((c_feat.shape[0],1),dtype=torch.float32).to(device)
 
-
+                avg_hist = None
 
                 for itr in range(autoregression_iteration):
-                    x_pred,y_pred,scs_all,mult = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub, 
+                    if avg_hist is not None:
+                        v_feat = avg_hist
+                    x_pred,y_pred,scs_all,mult,avg_hist = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub, 
                                                    AT_ori,A_ori,Q_ori,b_ori,c_ori,vscale,cscale,constscale,var_lb_ori,var_ub_ori)
 
                     if type(scs_all) == type((1,2)):
@@ -1468,10 +1471,12 @@ def inference(m,fnm,epoch,valid_tar_dir,pareto,device,modf,autoregression_iterat
     c_feat = torch.zeros((c_feat.shape[0],1),dtype=torch.float32).to(device)
 
         
-
+    hist = None
     for itr in range(autoregression_iteration):
+        if hist is not None:
+            v_feat = hist
         otime = time.time()
-        x_pred,y_pred,scs,mult = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
+        x_pred,y_pred,scs,mult,hist = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
                                                    AT_ori,A_ori,Q_ori,b_ori,c_ori,vscale,cscale,constscale,var_lb_ori,var_ub_ori)
         print(f'!!!!!!!!!!!!!!!!!   Inference time: {otime-time.time()}')
         bqual = b.squeeze(-1)
@@ -1775,13 +1780,14 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
             if accu_loss:
                 net_loss = None
                 optimizer.zero_grad()
-
+            avg_hist = None
             for itr in range(autoregression_iteration):
+                if avg_hist is not None:
+                    v_feat = avg_hist
                 if not accu_loss:
                     optimizer.zero_grad()
-                x_pred,y_pred,scs_all,mult = m(AT,A,Q,b,c,var_feat,con_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
-                                                   AT_ori,A_ori,Q_ori,b_ori,c_ori,vscale,cscale,constscale,var_lb_ori,var_ub_ori)
-                # print(x_pred)
+                x_pred,y_pred,scs_all,mult,avg_hist = m(AT,A,Q,b,c,var_feat,con_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
+                                                        AT_ori,A_ori,Q_ori,b_ori,c_ori,vscale,cscale,constscale,var_lb_ori,var_ub_ori)
                 pr_it = scs_all[1].item()
                 du_it = scs_all[2].item()
                 gp_it = scs_all[3].item()

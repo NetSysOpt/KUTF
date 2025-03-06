@@ -86,8 +86,6 @@ with torch.no_grad():
 
     train_tar_dir = '../pkl/train'
     valid_tar_dir = '../pkl/valid'
-    train_files = os.listdir(train_tar_dir)
-    valid_files = os.listdir(valid_tar_dir)
 
     # mode = 'cont'
     # mode = 'cont_temp'

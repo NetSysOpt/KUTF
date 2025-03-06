@@ -150,8 +150,8 @@ end synsmall
 synlarge
 max_k = 1
 nlayer = 4
-net_width = 256
-lr = 1e-4
+net_width = 512
+lr = 1e-6
 Contu = 1
 choose_weight = 0
 model_mode = 3
@@ -160,7 +160,7 @@ usedual = 1
 pareto = 0
 draw = 1
 accum_loss = 1
-eta_opt = 30000
+eta_opt = 40000
 inf_time = 1
 end synlarge
 

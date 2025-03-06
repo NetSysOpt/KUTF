@@ -47,8 +47,8 @@ mode = 'qplib8845'
 mode = 'syn'
 mode = args.type
 ident = ''
-train_files = os.listdir(train_ori_dir)
-valid_files = os.listdir(valid_ori_dir)
+# train_files = os.listdir(train_ori_dir)
+# valid_files = os.listdir(valid_ori_dir)
 
 
 if mode == 'single':

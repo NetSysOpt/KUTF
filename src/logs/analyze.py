@@ -117,9 +117,11 @@ ntypes = 2
 
 
 f = open('res.csv','w')
-st = f'ins ori_time ori_iter '
+st = f'ins ori_time '
+# st = f'ins ori_time ori_iter '
 for ff in folder_names:
-    st+=f'{ff}_time ratio {ff}_iter ratio PDQP_primal ws_primal pres dres rgap'
+    # st+=f'{ff}_time ratio {ff}_iter ratio PDQP_primal ws_primal pres dres rgap'
+    st+=f'{ff}_time ratio PDQP_primal ws_primal pres dres rgap'
 st+='\n'
 print(st)
 f.write(st)
@@ -146,6 +148,11 @@ elif len(filters)!=0:
 
 
 ops=[0,0,0]
+n_ent = -1
+for fnm in keys:
+    n_ent = max(len(file_map[fnm]), n_ent)
+avg_time = [0]*n_ent
+
 
 processed = 0
 for fnm in keys:
@@ -153,17 +160,22 @@ for fnm in keys:
     print(fnm,file_map[fnm])
     if len(file_map[fnm])<2:
         continue
-    st = f'{fnm} {file_map[fnm][0][1]} {file_map[fnm][0][0]} '
+    st = f'{fnm} {file_map[fnm][0][1]} '
+    avg_time[0] += file_map[fnm][0][1]
+    # st += f'{file_map[fnm][0][0]} '
     for idx in range(1,len(file_map[fnm])):
         ent = file_map[fnm][idx]
-        print(fnm,ent)
         ratio1 = (file_map[fnm][0][1] - file_map[fnm][idx][1])/(file_map[fnm][0][1]+1e-8)
         all_rats1[idx] +=ratio1
         st += f'{file_map[fnm][idx][1]} {round(ratio1*100,2)}% '
 
+        print(file_map[fnm][idx])
+        avg_time[idx] += file_map[fnm][idx][1]
+
         ratio1 = (file_map[fnm][0][0] - file_map[fnm][idx][0])/(file_map[fnm][0][0]+1e-8)
         all_rats2[idx] +=ratio1
-        st += f'{file_map[fnm][idx][0]} {round(ratio1*100,2)}% {file_map[fnm][0][2]} {file_map[fnm][idx][2]}'
+        # st += f'{file_map[fnm][idx][0]} {round(ratio1*100,2)}% '
+        st += f'{file_map[fnm][0][2]} {file_map[fnm][idx][2]}'
         processed+=1
         
         st+=f' {file_map[fnm][idx][3]} {file_map[fnm][idx][4]} {file_map[fnm][idx][5]}'
@@ -172,20 +184,32 @@ for fnm in keys:
         ops[2]+=file_map[fnm][idx][5]
 
     st+='\n'
-    print(st)
     f.write(st)
 
-ops[0]=ops[0]/processed
-ops[1]=ops[1]/processed
-ops[2]=ops[2]/processed
+# ops[0]=ops[0]/processed
+# ops[1]=ops[1]/processed
+# ops[2]=ops[2]/processed
 
-for idx in range(1,len(all_rats2)):
-    all_rats1[idx] /=processed
-    all_rats2[idx] /=processed
-st = f'avg / / '
-for idx in range(1,len(all_rats2)):
-    st += f'/ {all_rats1[idx]} / {all_rats2[idx]} / / / {ops[0]} {ops[1]} {ops[2]}'
+# for idx in range(1,len(all_rats2)):
+#     all_rats1[idx] /=processed
+#     all_rats2[idx] /=processed
+# st = f'avg / / '
+# for idx in range(1,len(all_rats2)):
+#     st += f'/ {all_rats1[idx]} / {all_rats2[idx]} / / / {ops[0]} {ops[1]} {ops[2]}'
+# st+='\n'
+
+st = f'totalTime '
+for idx in range(len(all_rats2)):
+    st += f'{avg_time[idx]} '
 st+='\n'
-
 f.write(st)
+
+st = f'Improv. '
+for idx in range(len(all_rats2)):
+    val = (avg_time[0] - avg_time[idx])/avg_time[0]
+    val = round(val * 100.0, 4)
+    st += f'{val}% '
+st+='\n'
+f.write(st)
+
 f.close()

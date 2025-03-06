@@ -76,6 +76,9 @@ ident = f'k{max_k}_{nlayer}'
 type_modef = 'linf'
 type_modef = 'l2'
 
+use_residual = None
+if max_k > 1:
+    use_residual = max_k
 
 if model_mode == 0:
     m = PDQP_Net_shared(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,type=type_modef).to(device)
@@ -83,11 +86,13 @@ elif model_mode == 1:
     m = PDQP_Net_AR(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,type=type_modef,use_dual=use_dual).to(device)
     ident += '_AR'
 elif model_mode == 2:
-    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual,eta_opt=eta_opt,div=div).to(device)
+    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual,eta_opt=eta_opt,div=div, use_residual = use_residual).to(device)
     ident += '_ARgeq'
 elif model_mode == 3:
-    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual,eta_opt=eta_opt,div=div,mode=0).to(device)
+    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual,eta_opt=eta_opt,div=div,mode=0, use_residual=use_residual).to(device)
     ident += '_ARgeq'
+    if max_k > 1:
+        ident += f'_maxk{max_k}'
 
     
 
@@ -107,8 +112,8 @@ modf = relKKT_general(mode = 'linf')
 
 train_tar_dir = '../pkl/train'
 valid_tar_dir = '../pkl/valid'
-train_files = os.listdir(train_tar_dir)
-valid_files = os.listdir(valid_tar_dir)
+# train_files = os.listdir(train_tar_dir)
+# valid_files = os.listdir(valid_tar_dir)
 
 
 if mode == 'single':
@@ -202,8 +207,8 @@ if os.path.exists(f"../model/best_pdqp{ident}.mdl") and Contu:
     if 'nepoch' in checkpoint:
         last_epoch=checkpoint['nepoch']
     best_loss=checkpoint['best_loss']
-    print(f'Last best val loss gen:  {best_loss}')
-    print('Model Loaded')
+    print(f'loaded: ../model/best_pdqp{ident}.mdl\nLast best val loss gen:  {best_loss}')
+    print('Model Loaded'+f"../model/best_pdqp{ident}.mdl")
     loaded=True
 
 save_log = True
