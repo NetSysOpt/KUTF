@@ -165,6 +165,24 @@ inf_time = 1
 end synlarge
 
 
+synxlarge
+max_k = 1
+nlayer = 4
+net_width = 512
+lr = 1e-7
+Contu = 1
+choose_weight = 0
+model_mode = 3
+mode = synxlarge
+usedual = 1
+pareto = 0
+draw = 1
+accum_loss = 1
+eta_opt = 30000
+inf_time = 1
+end synxlarge
+
+
 5527
 max_k = 1
 nlayer = 2

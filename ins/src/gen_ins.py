@@ -854,10 +854,10 @@ import multiprocessing
 nworker=20
 pool = multiprocessing.Pool(nworker)
     
-for i in range(1000):
+for i in range(500):
     # p = pool.apply_async(gen_ins, (i,'synsmall',1000,1000,0.8,0.3,))  
     # p = pool.apply_async(gen_ins, (i,'synmid',5000,5000,0.8,0.1,))  
-    p = pool.apply_async(gen_ins, (i,'synlarge',10000,10000,0.8,0.01,1.0,i,))  
+    p = pool.apply_async(gen_ins, (i,'synxlarge',10000,10000,0.6,0.05,1.0,i,))  
     # p = pool.apply_async(gen_svm, (i,'small',256,10000,0.15,))  
     # p = pool.apply_async(gen_svm, (i,'mid',512,50000,0.15,))  
     # p = pool.apply_async(gen_svm, (i,'large',1024,100000,0.15,))  
