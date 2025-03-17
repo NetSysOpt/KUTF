@@ -7,6 +7,7 @@ import gzip
 import os
 from alive_progress import alive_bar
 from model import compute_weight_grad
+from colorama import Fore, Back, Style
 import matplotlib.pyplot as plt
 
 def extract(fnm):
@@ -1349,12 +1350,15 @@ def valid(m,valid_files,epoch,valid_tar_dir,pareto,device,modf,autoregression_it
                 v_feat = torch.zeros((v_feat.shape[0],1),dtype=torch.float32).to(device)
                 c_feat = torch.zeros((c_feat.shape[0],1),dtype=torch.float32).to(device)
 
-                avg_hist = None
+                avg_histx = None
+                avg_histy = None
 
                 for itr in range(autoregression_iteration):
-                    if avg_hist is not None:
-                        v_feat = avg_hist
-                    x_pred,y_pred,scs_all,mult,avg_hist = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub, 
+                    if avg_histx is not None:
+                        v_feat = avg_histx
+                        c_feat = avg_histy
+                    print(Fore.RED + f'{itr} {v_feat.shape}'+Style.RESET_ALL)
+                    x_pred,y_pred,scs_all,mult,avg_histx,avg_histy = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub, 
                                                    AT_ori,A_ori,Q_ori,b_ori,c_ori,vscale,cscale,constscale,var_lb_ori,var_ub_ori)
 
                     if type(scs_all) == type((1,2)):
@@ -1471,12 +1475,14 @@ def inference(m,fnm,epoch,valid_tar_dir,pareto,device,modf,autoregression_iterat
     c_feat = torch.zeros((c_feat.shape[0],1),dtype=torch.float32).to(device)
 
         
-    hist = None
+    avg_histx = None
+    avg_histy = None
     for itr in range(autoregression_iteration):
-        if hist is not None:
-            v_feat = hist
+        if avg_histx is not None:
+            v_feat = avg_histx
+            c_feat = avg_histy
         otime = time.time()
-        x_pred,y_pred,scs,mult,hist = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
+        x_pred,y_pred,scs,mult,avg_histx,avg_histy = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
                                                    AT_ori,A_ori,Q_ori,b_ori,c_ori,vscale,cscale,constscale,var_lb_ori,var_ub_ori)
         print(f'!!!!!!!!!!!!!!!!!   Inference time: {otime-time.time()}')
         bqual = b.squeeze(-1)
@@ -1721,8 +1727,8 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
             mems = torch.cuda.memory_allocated()
             f_tar = gzip.open(f'{train_tar_dir}/{fnm}','rb')
             to_pack = pickle.load(f_tar)
-            v_feat = to_pack['vf'].to(device)
-            c_feat = to_pack['cf'].to(device)
+            v_feats = to_pack['vf'].shape
+            c_feats = to_pack['cf'].shape
             Q = to_pack['Q'].to(device)
             A = to_pack['A'].to(device)
             AT = torch.transpose(A,0,1)
@@ -1773,20 +1779,23 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
 
             
             # in this version, use all 0 start
-            var_feat = torch.zeros((v_feat.shape[0],1),dtype=torch.float32).to(device)
-            con_feat = torch.zeros((c_feat.shape[0],1),dtype=torch.float32).to(device)
+            var_feat = torch.zeros((v_feats[0],1),dtype=torch.float32).to(device)
+            con_feat = torch.zeros((c_feats[0],1),dtype=torch.float32).to(device)
             
             
             if accu_loss:
                 net_loss = None
                 optimizer.zero_grad()
-            avg_hist = None
+            avg_histx = None
+            avg_histy = None
             for itr in range(autoregression_iteration):
-                if avg_hist is not None:
-                    v_feat = avg_hist
+                print(Fore.GREEN + f'{itr} {var_feat.shape}'+Style.RESET_ALL)
+                if avg_histx is not None:
+                    var_feat = avg_histx
+                    con_feat = avg_histy
                 if not accu_loss:
                     optimizer.zero_grad()
-                x_pred,y_pred,scs_all,mult,avg_hist = m(AT,A,Q,b,c,var_feat,con_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
+                x_pred,y_pred,scs_all,mult,avg_histx,avg_histy = m(AT,A,Q,b,c,var_feat,con_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
                                                         AT_ori,A_ori,Q_ori,b_ori,c_ori,vscale,cscale,constscale,var_lb_ori,var_ub_ori)
                 pr_it = scs_all[1].item()
                 du_it = scs_all[2].item()

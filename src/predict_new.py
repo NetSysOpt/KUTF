@@ -58,6 +58,9 @@ eta_opt=None
 #     eta_opt = float(config['eta_opt'])
 
 ident = f'k{max_k}_{nlayer}'
+use_residual = None
+if max_k > 1:
+    use_residual = max_k
 
 if model_mode == 0:
     m = PDQP_Net_shared(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,type='linf').to(device)
@@ -65,11 +68,13 @@ elif model_mode == 1:
     m = PDQP_Net_AR(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,type='linf',use_dual=use_dual).to(device)
     ident += '_AR'
 elif model_mode == 2:
-    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype='linf',use_dual=use_dual).to(device)
+    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype="linf",use_dual=use_dual, use_residual = use_residual).to(device)
     ident += '_ARgeq'
 elif model_mode == 3:
-    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype='linf',use_dual=use_dual,eta_opt=eta_opt,mode=0).to(device)
+    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype="linf",use_dual=use_dual,mode=0, use_residual=use_residual).to(device)
     ident += '_ARgeq'
+    if max_k > 1:
+        ident += f'_maxk{max_k}'
 
 # modf = relKKT_real()
 modf = relKKT_general(mode = 'linf',eta_opt = eta_opt)

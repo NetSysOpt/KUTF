@@ -255,8 +255,20 @@ class PDQP_Net_geq_morelayer(torch.nn.Module):
         #     nn.Linear(feat_size,1,bias=False),
         # )
         self.residual_layer = None
+        self.res_final = None
         if use_residual is not None:
-            self.residual_layer = None
+            self.res_finalx = nn.Sequential(
+                nn.Linear(feat_size,feat_size,bias=True),
+                nn.LeakyReLU(),
+                nn.Linear(feat_size,out_feat,bias=False),
+            )
+            self.res_finaly = nn.Sequential(
+                nn.Linear(feat_size,feat_size,bias=True),
+                nn.LeakyReLU(),
+                nn.Linear(feat_size,out_feat,bias=False),
+            )
+            self.residual_layerx = RestartLayer(feat_size,feat_size,feat_size)
+            self.residual_layery = RestartLayer(feat_size,feat_size,feat_size)
         
     def forward(self,A,AT,Q,b,c,x,y,indicator_y,indicator_x_l,indicator_x_u,l,u):
 
@@ -265,21 +277,27 @@ class PDQP_Net_geq_morelayer(torch.nn.Module):
         y = self.init_y(y)
         
         x_bar = x
-        hist = None
+        histx = None
+        histy = None
         cmat = torch.matmul(c,torch.ones((1,self.feat_size),dtype = torch.float32).to(c.device))
         bmat = torch.matmul(b,torch.ones((1,self.feat_size),dtype = torch.float32).to(b.device))
         for index, layer in enumerate(self.updates):
             x,x_bar,y = layer(x,x_bar,y,Q,A,AT,c,b,indicator_y,indicator_x_l,indicator_x_u,l,u,cmat,bmat)
-            if hist is None:
-                hist = x
-            elif self.residual_layer is not None:
-                hist = self.residual_layer(x, hist)
+            if histx is None:
+                histx = x
+                histy = y
+            if self.residual_layer is not None:
+                histx = self.residual_layer(x, histx)
+                histy = self.residual_layer(y, histy)
 
         x = self.out_x(x)
         y = self.out_y(y)
         # x = self.out(x)
         # y = self.out(y)
-        return x,y,hist
+        if self.res_finalx is not None:
+            return x,y,self.res_finalx(histx),self.res_finaly(histy)
+        else:
+            return x,y,None,None
 
 
 class PDQP_Net_geq(torch.nn.Module):
@@ -317,7 +335,8 @@ class PDQP_Net_geq(torch.nn.Module):
         # )
         self.residual_layer = None
         if use_residual is not None:
-            self.residual_layer = None
+            # self.residual_layer = None
+            self.residual_layer = RestartLayer(feat_size,feat_size,feat_size)
         
     def forward(self,A,AT,Q,b,c,x,y,indicator_y,indicator_x_l,indicator_x_u,l,u):
 
@@ -328,20 +347,27 @@ class PDQP_Net_geq(torch.nn.Module):
         # y = self.init(y)
         
         x_bar = x
-        hist = None
+        histx = None
+        histy = None
         cmat = torch.matmul(c,torch.ones((1,self.feat_size),dtype = torch.float32).to(c.device))
         bmat = torch.matmul(b,torch.ones((1,self.feat_size),dtype = torch.float32).to(b.device))
         for index, layer in enumerate(self.updates):
             x,x_bar,y = layer(x,x_bar,y,Q,A,AT,c,b,indicator_y,indicator_x_l,indicator_x_u,l,u,cmat,bmat)
-            if hist is None:
-                hist = x
-            elif self.residual_layer is not None:
-                hist = self.residual_layer(x, hist)
+            if histx is None:
+                histx = x
+                histy = y
+            if self.residual_layer is not None:
+                histx = self.residual_layer(x, histx)
+                histy = self.residual_layer(y, histy)
         x = self.out_x(x)
         y = self.out_y(y)
         # x = self.out(x)
         # y = self.out(y)
-        return x,y,None
+        # return x,y,None,None
+        if self.res_finalx is not None:
+            return x,y,self.res_finalx(histx),self.res_finaly(histy)
+        else:
+            return x,y,None,None
 
 class PDQP_Net_AR_geq(torch.nn.Module):
     def __init__(self,x_size,y_size,feat_size,max_k = 20, threshold = 1e-8,nlayer=1, 
@@ -371,10 +397,11 @@ class PDQP_Net_AR_geq(torch.nn.Module):
         scs = None
         mult = 0.0
 
-        residual = None
+        residualx = None
+        residualy = None
 
         for iter in range(self.max_k):
-            x,y,residual = self.net(A,AT,Q,b,c,x,y,indicator_y,indicator_x_l,indicator_x_u,l,u)
+            x,y,residualx, residualy = self.net(A,AT,Q,b,c,x,y,indicator_y,indicator_x_l,indicator_x_u,l,u)
             # x = self.final_out(x, indicator_x_l, indicator_x_u, l, u)
             sc = self.qual_func(Q_ori,A_ori,AT_ori,bqual_ori,cqual_ori,x,y,indicator_y,indicator_x_l,indicator_x_u,var_lb_ori,var_ub_ori,
                                 vscale,cscale,constscale)
@@ -387,7 +414,7 @@ class PDQP_Net_AR_geq(torch.nn.Module):
         # x = self.final_out(x, indicator_x_l, indicator_x_u, l, u)
         # scs = self.qual_func(Q,A,AT,bqual,cqual,x,y,indicator_y,indicator_x_l,indicator_x_u,l,u)
 
-        return x,y,scs,mult,residual
+        return x,y,scs,mult,residualx,residualy
         
 
 class RestartLayer(torch.nn.Module):
@@ -395,6 +422,8 @@ class RestartLayer(torch.nn.Module):
         super(RestartLayer,self).__init__()
         self.net = nn.Sequential(
             nn.Linear(a_size+b_size,feat_sizes,bias=False),
+            nn.LeakyReLU(),
+            nn.Linear(feat_sizes,feat_sizes,bias=False),
         )
 
     def forward(self,x,hist):

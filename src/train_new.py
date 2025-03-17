@@ -186,6 +186,7 @@ else:
             train_files.append(train_files[0])
     ident += f'_{mode}'
 
+# train_files = train_files[:3]
 
 loss_func = torch.nn.MSELoss()
 # optimizer = torch.optim.SGD(m.parameters(), lr=lr1)
