@@ -27,7 +27,8 @@ After training, you first need to generate predictions by running ./src/predict_
 Then, use ./src/julia/PDQP.jl/gen_bat.py to generate a batch file that runs the test.
 
 ## Citing
-TODO
+**This work**: Yang, Linxin, et al. "An Efficient Unsupervised Framework for Convex Quadratic Programs via Deep Unrolling." arXiv preprint arXiv:2412.01051 (2024).
+**PDQP.jl**: [Lu, Haihao, and Jinwen Yang. "A practical and optimal first-order method for large-scale convex quadratic programming." arXiv preprint arXiv:2311.07710 (2023).](https://github.com/jinwen-yang/PDQP.jl)
 
 ## Contact
 TODO
