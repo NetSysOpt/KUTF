@@ -8,3 +8,5 @@ gen_train_*
 qplib
 qplib*
 *.log
+ins/mm
+ins/gen_train*
