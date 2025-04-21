@@ -19,18 +19,21 @@ filters = [x for x in filters if x!='']
 
 
 def read_json(fnm):
-    # Opening JSON file
-    if '.gz' in fnm:
-        f = gzip.open(fnm)
-    else:
-        f = open(fnm)
-        
-    # returns JSON object as 
-    # a dictionary
-    data = json.load(f)
-    # Closing file
-    f.close()
-    return data
+    try:
+        # Opening JSON file
+        if '.gz' in fnm:
+            f = gzip.open(fnm)
+        else:
+            f = open(fnm)
+            
+        # returns JSON object as 
+        # a dictionary
+        data = json.load(f)
+        # Closing file
+        f.close()
+        return data
+    except:
+        return None
 
 file_map = {}
 
@@ -45,6 +48,9 @@ for fnm in ori_files:
     file_map[fnm].append([-1,-1,-1,-1,-1,-1])
     print(f'{ori_log}/{fnm}')
     logs = read_json(f'{ori_log}/{fnm}')
+
+    if logs is None:
+        continue
     itnm = logs['iteration_count']
     tttm = logs['solve_time_sec']
     tprimal = logs['solution_stats']['convergence_information'][0]['primal_objective']
@@ -73,6 +79,8 @@ for fnm in wms_files:
         file_map[fnm] = []
     file_map[fnm].append([-1,-1,-1,-1,-1,-1])
     logs = read_json(f'./warmstart/{fnm2}')
+    if logs is None:
+        continue
     # print(logs.keys())
     # for ll in logs['iteration_stats']:
     #     print(ll)
@@ -121,7 +129,9 @@ st = f'ins ori_time '
 # st = f'ins ori_time ori_iter '
 for ff in folder_names:
     # st+=f'{ff}_time ratio {ff}_iter ratio PDQP_primal ws_primal pres dres rgap'
-    st+=f'{ff}_time ratio PDQP_primal ws_primal pres dres rgap'
+    st+=f'{ff}_time T_ratio '
+    st+=f'ori_iter {ff}_iter iter_ratio '
+    st+=f'PDQP_primal ws_primal pres dres rgap'
 st+='\n'
 print(st)
 f.write(st)
@@ -138,8 +148,8 @@ for fnm in file_map:
 keys.sort()
 
 if filters=='mm':
-    tars_sums = os.listdir('/home/lxyang/git/pdqpnet/pkl/valid')
-    keys = [x.replace('.QPS.pkl','_summary.json') for x in tars_sums]
+    tars_sums = os.listdir('/home/lxyang/git/pdqpnet/pkl/mm_test')
+    keys = [x.replace('.QPS.pkl','_summary.json').replace('.mps.pkl','_summary.json') for x in tars_sums]
 elif len(filters)!=0:
     keys_new = []
     for ft in filters:
@@ -161,13 +171,21 @@ for fnm in keys:
     if len(file_map[fnm])<2:
         continue
     st = f'{fnm} {file_map[fnm][0][1]} '
-    avg_time[0] += file_map[fnm][0][1]
     # st += f'{file_map[fnm][0][0]} '
+    flag = False
     for idx in range(1,len(file_map[fnm])):
         ent = file_map[fnm][idx]
+        # time
+        if file_map[fnm][idx][1] < 0:
+            flag = True
+            break
         ratio1 = (file_map[fnm][0][1] - file_map[fnm][idx][1])/(file_map[fnm][0][1]+1e-8)
         all_rats1[idx] +=ratio1
         st += f'{file_map[fnm][idx][1]} {round(ratio1*100,2)}% '
+
+        # iteration
+        ratio2 = (file_map[fnm][0][0] - file_map[fnm][idx][0])/(file_map[fnm][0][0]+1e-8)
+        st += f'{file_map[fnm][0][0]} {file_map[fnm][idx][0]} {round(ratio2*100,2)}% '
 
         print(file_map[fnm][idx])
         avg_time[idx] += file_map[fnm][idx][1]
@@ -183,8 +201,11 @@ for fnm in keys:
         ops[1]+=file_map[fnm][idx][4]
         ops[2]+=file_map[fnm][idx][5]
 
-    st+='\n'
-    f.write(st)
+
+    if not flag:
+        avg_time[0] += file_map[fnm][0][1]
+        st+='\n'
+        f.write(st)
 
 # ops[0]=ops[0]/processed
 # ops[1]=ops[1]/processed

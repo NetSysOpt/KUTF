@@ -128,6 +128,7 @@ else:
     mode1 = mode.replace('qplib','')
     train_tar_dir = f'../pkl/{mode1}_train'
     valid_tar_dir = f'../pkl/{mode1}_valid'
+    test_tar_dir = f'../pkl/{mode1}_test'
     train_ori_dir = f'../ins/gen_train_{mode1}'
     valid_ori_dir = f'../ins/valid'
     train_files = os.listdir(train_ori_dir)
@@ -182,9 +183,9 @@ failed_ins = []
 
 instances = train_files
 n_files = len(instances)
-train_files = instances[:int(round(n_files*0.85))]
-valid_files = instances[int(round(n_files*0.85)):int(round(n_files*0.95))]
-test_files = instances[int(round(n_files*0.95)):]
+train_files = instances[:int(round(n_files*0.8))]
+valid_files = instances[int(round(n_files*0.8)):int(round(n_files*0.85))]
+test_files = instances[int(round(n_files*0.85)):]
 
 print('   train|   valid|    test')
 print(f'{len(train_files):<8}|{len(valid_files):<8}|{len(test_files):<8}')
@@ -254,32 +255,35 @@ with alive_bar(len(valid_files),title=f"Generating Validating samples") as bar:
         try:
             v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_scaled_sparse(f'{valid_ori_dir}/{fnm}')
             _, _, Q_ori, A_ori, c_ori, b_ori, x_ori, y_ori, vscale_ori, cscale_ori, constscale_ori, var_lb_ori, var_ub_ori, vars_ident_l_ori, vars_ident_u_ori, cons_ident_ori = extract_solfile_unscaled_sparse(f'{valid_ori_dir}/{fnm}')
-            # v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_unscaled_sparse(f'{valid_ori_dir}/{fnm}')
 
-            # v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_scaled(f'{valid_ori_dir}/{fnm}')
-            # v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_unscaled(f'{valid_ori_dir}/{fnm}')
-            # v_feat, c_feat, Q, A, c, b, x, y = extract_solfile_scaled(f'../ins/valid/{fnm}')
+            # v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_scaled(f'{train_ori_dir}/{fnm}')
+            # v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_unscaled(f'{train_ori_dir}/{fnm}')
             # v_feat, c_feat, Q, A, c, b, x, y = extract_solfile(f'../ins/train/{fnm}')
+            
+
             to_pack = {}
             to_pack['vf'] = v_feat
             to_pack['cf'] = c_feat
             to_pack['Q'] = Q.float()
             to_pack['A'] = A.float()
+            to_pack['c'] = torch.as_tensor(c).float()
+            to_pack['b'] = torch.as_tensor(b).float()
             to_pack['Q_ori'] = Q_ori.float()
             to_pack['A_ori'] = A_ori.float()
             to_pack['c_ori'] = torch.as_tensor(c_ori).float()
             to_pack['b_ori'] = torch.as_tensor(b_ori).float()
-            # to_pack['c'] = c
-            # to_pack['b'] = b
-            to_pack['c'] = torch.as_tensor(c).float()
-            to_pack['b'] = torch.as_tensor(b).float()
+
             to_pack['x'] = x
             to_pack['y'] = y
-            to_pack['vscale'] = vscale
-            to_pack['cscale'] = cscale
-            to_pack['constscale'] = constscale
+
+            to_pack['vscale'] = torch.as_tensor(vscale).float()
+            to_pack['cscale'] =  torch.as_tensor(cscale).float()
+            to_pack['constscale'] =  torch.as_tensor(constscale).float()
+
             to_pack['var_lb'] = var_lb
             to_pack['var_ub'] = var_ub
+            to_pack['var_lb_ori'] = var_lb_ori
+            to_pack['var_ub_ori'] = var_ub_ori
             to_pack['vars_ident_l'] = vars_ident_l
             to_pack['vars_ident_u'] = vars_ident_u
             to_pack['cons_ident'] = cons_ident
@@ -300,32 +304,35 @@ with alive_bar(len(test_files),title=f"Generating Testing samples") as bar:
         try:
             v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_scaled_sparse(f'{valid_ori_dir}/{fnm}')
             _, _, Q_ori, A_ori, c_ori, b_ori, x_ori, y_ori, vscale_ori, cscale_ori, constscale_ori, var_lb_ori, var_ub_ori, vars_ident_l_ori, vars_ident_u_ori, cons_ident_ori = extract_solfile_unscaled_sparse(f'{valid_ori_dir}/{fnm}')
-            # v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_unscaled_sparse(f'{valid_ori_dir}/{fnm}')
 
-            # v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_scaled(f'{valid_ori_dir}/{fnm}')
-            # v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_unscaled(f'{valid_ori_dir}/{fnm}')
-            # v_feat, c_feat, Q, A, c, b, x, y = extract_solfile_scaled(f'../ins/valid/{fnm}')
+            # v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_scaled(f'{train_ori_dir}/{fnm}')
+            # v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_unscaled(f'{train_ori_dir}/{fnm}')
             # v_feat, c_feat, Q, A, c, b, x, y = extract_solfile(f'../ins/train/{fnm}')
+            
+
             to_pack = {}
             to_pack['vf'] = v_feat
             to_pack['cf'] = c_feat
             to_pack['Q'] = Q.float()
             to_pack['A'] = A.float()
+            to_pack['c'] = torch.as_tensor(c).float()
+            to_pack['b'] = torch.as_tensor(b).float()
             to_pack['Q_ori'] = Q_ori.float()
             to_pack['A_ori'] = A_ori.float()
             to_pack['c_ori'] = torch.as_tensor(c_ori).float()
             to_pack['b_ori'] = torch.as_tensor(b_ori).float()
-            # to_pack['c'] = c
-            # to_pack['b'] = b
-            to_pack['c'] = torch.as_tensor(c).float()
-            to_pack['b'] = torch.as_tensor(b).float()
+
             to_pack['x'] = x
             to_pack['y'] = y
-            to_pack['vscale'] = vscale
-            to_pack['cscale'] = cscale
-            to_pack['constscale'] = constscale
+
+            to_pack['vscale'] = torch.as_tensor(vscale).float()
+            to_pack['cscale'] =  torch.as_tensor(cscale).float()
+            to_pack['constscale'] =  torch.as_tensor(constscale).float()
+
             to_pack['var_lb'] = var_lb
             to_pack['var_ub'] = var_ub
+            to_pack['var_lb_ori'] = var_lb_ori
+            to_pack['var_ub_ori'] = var_ub_ori
             to_pack['vars_ident_l'] = vars_ident_l
             to_pack['vars_ident_u'] = vars_ident_u
             to_pack['cons_ident'] = cons_ident

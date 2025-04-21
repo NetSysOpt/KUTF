@@ -35,11 +35,18 @@ lr1 = float(config['lr'])
 net_width = int(config['net_width'])
 model_mode = int(config['model_mode'])
 mode = config['mode']
-eta_opt = float(config['eta_opt'])
+
+eta_opt = None
+if "eta_opt" in config:
+    eta_opt = float(config['eta_opt'])
 
 if 'gpu' in config:
     dev = int(config['gpu'])
-    device = torch.device(f"cuda:{dev}" if torch.cuda.is_available() else "cpu")
+    if dev > 0:
+        device = torch.device(f"cuda:{dev}" if torch.cuda.is_available() else "cpu")
+    else:
+        device = torch.device("cpu")
+
 
 
 div = 1.0
@@ -221,7 +228,7 @@ if save_log:
     f_gg = open(f'../plots/distance/logs/{args.type}_{valid_files[-1]}.rec','a+')
 
 for epoch in range(last_epoch,max_epoch):
-    avg_train_loss = process(m,train_files,epoch,train_tar_dir,pareto=pareto,device=device,optimizer=optimizer,choose_weight=choose_weight,autoregression_iteration=max_k,accu_loss = accum_loss)
+    avg_train_loss = process(m,train_files,epoch,train_tar_dir,pareto=pareto,device=device,optimizer=optimizer,choose_weight=choose_weight,autoregression_iteration=max_k,accu_loss = accum_loss,cur_best=best_loss)
     avg_train_loss = avg_train_loss[-1] / len(train_files)
 
     avg_valid_loss,avg_sc, avg_scprimal, avg_scdual, avg_scgap = process(m,valid_files,epoch,valid_tar_dir,pareto=pareto,device=device,optimizer=modf,choose_weight=choose_weight,autoregression_iteration=max_k,training=False)

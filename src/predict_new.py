@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--type','-t', type=str, default='')
 args = parser.parse_args()
 
-device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # max_k = 100
 # m = PDQP_Net_AR(1,1,64,max_k = max_k, threshold = 1e-4,nlayer=1).to(device)
 # max_k = 20
@@ -152,17 +152,24 @@ with torch.no_grad():
         valid_files = os.listdir(valid_tar_dir)
         ident += '_qplib_8547'
     else:
+        # mode1 = mode.replace('qplib_','')
+        # train_tar_dir = f'../pkl/{mode1}_train'
+        # valid_tar_dir = f'../pkl/{mode1}_valid'
+        # train_files = os.listdir(train_tar_dir)
+        # valid_files = os.listdir(valid_tar_dir)
+        # if len(valid_files) == 0:
+        #     valid_files.append(train_files[0])
+        #     valid_tar_dir = train_tar_dir
+        # if len(train_files) ==1:
+        #     for i in range(100):
+        #         train_files.append(train_files[0])
+        # ident += f'_{mode}'
         mode1 = mode.replace('qplib_','')
-        train_tar_dir = f'../pkl/{mode1}_train'
-        valid_tar_dir = f'../pkl/{mode1}_valid'
-        train_files = os.listdir(train_tar_dir)
-        valid_files = os.listdir(valid_tar_dir)
-        if len(valid_files) == 0:
-            valid_files.append(train_files[0])
-            valid_tar_dir = train_tar_dir
-        if len(train_files) ==1:
-            for i in range(100):
-                train_files.append(train_files[0])
+        test_tar_dir = f'../pkl/{mode1}_test'
+        test_files = os.listdir(test_tar_dir)
+        if len(test_files) == 0:
+            test_files.append(train_files[0])
+            test_tar_dir = train_tar_dir
         ident += f'_{mode}'
 
     loss_func = torch.nn.MSELoss()
@@ -183,9 +190,9 @@ with torch.no_grad():
         print('Model Loaded')
 
 
-    with alive_bar(len(valid_files),title=f"Validating part") as bar:
-        for fnm in valid_files:
-            inference(m,fnm,last_epoch,valid_tar_dir,pareto,device,modf,inf_time)
+    with alive_bar(len(test_files),title=f"Validating part") as bar:
+        for fnm in test_files:
+            inference(m,fnm,last_epoch,test_tar_dir,pareto,device,modf,inf_time)
             bar()
 
         

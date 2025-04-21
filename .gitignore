@@ -10,3 +10,5 @@ qplib*
 *.log
 ins/mm
 ins/gen_train*
+plots/*
+model/*

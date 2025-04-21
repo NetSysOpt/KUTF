@@ -1279,11 +1279,11 @@ def getConfig(ident=''):
     return res_dic
 
 
-def process(m,files,epoch,tar_dir,pareto,device,optimizer,choose_weight=False,autoregression_iteration=1,training=True,accu_loss = True):
+def process(m,files,epoch,tar_dir,pareto,device,optimizer,choose_weight=False,autoregression_iteration=1,training=True,accu_loss = True,cur_best=None):
     if not training:
         return valid(m,files,epoch,tar_dir,pareto,device,optimizer,autoregression_iteration)
     else:
-        return train(m,files,epoch,tar_dir,pareto,device,optimizer,choose_weight,autoregression_iteration,accu_loss = accu_loss)
+        return train(m,files,epoch,tar_dir,pareto,device,optimizer,choose_weight,autoregression_iteration,accu_loss = accu_loss,cur_best=cur_best)
 
 
 
@@ -1718,10 +1718,10 @@ def sol_check_model(fdir,device,modf,model):
 
 check_grad=False
 # check_grad=True
-def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weight,autoregression_iteration,accu_loss):
+def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weight,autoregression_iteration,accu_loss,cur_best):
     avg_train_loss = [0.0]*autoregression_iteration
     random.shuffle(train_files)
-    with alive_bar(len(train_files),title=f"Training epoch {epoch}") as bar:
+    with alive_bar(len(train_files),title=f"Training epoch {epoch}........ Current Best: {cur_best}") as bar:
         for fnm in train_files:
             # input()
             mems = torch.cuda.memory_allocated()

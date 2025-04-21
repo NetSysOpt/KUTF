@@ -95,7 +95,7 @@ elif mode == 'qplib':
 
 else:
     if 'test' not in mode:
-        modifier = '--checkiter=5  --tolerance=1e-5'
+        modifier = '--checkiter=10  --tolerance=1e-4'
         print('!!!!!! free mode for data')
         f=open(f'run_data.bat','w')
         flist = os.listdir(f'../../../ins/gen_train_{mode}/')
@@ -149,11 +149,11 @@ else:
             modifier2 = '--checkiter=5 --tolerance=1e-5'
         if 'mm' in mode:
             choose=0
-            modifier = '--checkiter=5 --tolerance=1e-6'
-            modifier2 = '--checkiter=5 --tolerance=1e-6'
+            modifier = '--checkiter=5 --tolerance=1e-5'
+            modifier2 = '--checkiter=5 --tolerance=1e-5'
         mode = mode.replace('test_','').replace('_test','')
         f=open(f'run_test.bat','w')
-        flist = os.listdir(f'../../../pkl/{mode}_valid/')
+        flist = os.listdir(f'../../../pkl/{mode}_test/')
         flist = [x.replace('.pkl','') for x in flist]
         for fnm in flist:
             if True:
