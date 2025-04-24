@@ -389,7 +389,7 @@ function write_model(
 
 
     if filename!=""
-        open("/home/lxyang/git/pdqpnet/transformed_ins/train/$(filename)", "w") do file
+        open("../../../transformed_ins/train/$(filename)", "w") do file
             ori_mm = original_problem.num_constraints
             ori_nn = original_problem.num_variables
 
@@ -471,7 +471,7 @@ function write_model(
             write(file, "$(num_eq)\n")
         end
 
-        open("/home/lxyang/git/pdqpnet/ori_ins/train/$(filename)", "w") do file
+        open("../../../ori_ins/train/$(filename)", "w") do file
             ori_mm = original_problem.num_constraints
             ori_nn = original_problem.num_variables
 
@@ -579,7 +579,7 @@ function optimize(
 
     telapsed = @elapsed begin
         if filename!=""
-            open("/home/lxyang/git/pdqpnet/transformed_ins/train/$(filename)", "w") do file
+            open("../../../transformed_ins/train/$(filename)", "w") do file
                 ori_mm = original_problem.num_constraints
                 ori_nn = original_problem.num_variables
 
@@ -661,7 +661,7 @@ function optimize(
                 write(file, "$(num_eq)\n")
             end
 
-            open("/home/lxyang/git/pdqpnet/ori_ins/train/$(filename)", "w") do file
+            open("../../../ori_ins/train/$(filename)", "w") do file
                 ori_mm = original_problem.num_constraints
                 ori_nn = original_problem.num_variables
 
