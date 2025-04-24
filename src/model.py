@@ -255,7 +255,7 @@ class PDQP_Net_geq_morelayer(torch.nn.Module):
         #     nn.Linear(feat_size,1,bias=False),
         # )
         self.residual_layer = None
-        self.res_final = None
+        self.res_finalx = None
         if use_residual is not None:
             self.res_finalx = nn.Sequential(
                 nn.Linear(feat_size,feat_size,bias=True),

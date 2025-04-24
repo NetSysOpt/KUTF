@@ -76,8 +76,6 @@ with torch.no_grad():
 
     train_tar_dir = '../pkl/train'
     valid_tar_dir = '../pkl/valid'
-    train_files = os.listdir(train_tar_dir)
-    valid_files = os.listdir(valid_tar_dir)
 
     # mode = 'cont'
     # mode = 'cont_temp'
@@ -141,7 +139,7 @@ with torch.no_grad():
     else:
         mode1 = mode.replace('qplib_','')
         train_tar_dir = f'../pkl/{mode1}_train'
-        valid_tar_dir = f'../pkl/{mode1}_valid'
+        valid_tar_dir = f'../pkl/{mode1}_test'
         train_files = os.listdir(train_tar_dir)
         valid_files = os.listdir(valid_tar_dir)
         if len(valid_files) == 0:

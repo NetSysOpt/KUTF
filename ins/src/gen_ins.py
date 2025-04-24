@@ -916,10 +916,10 @@ import multiprocessing
 # p = gen_ins_mat(1,'synxlarge',10000,10000,0.96,0.01,1.0,1,)
 # quit()
 
-nworker=10
+nworker=6
 pool = multiprocessing.Pool(nworker)
     
-for i in range(1):
+for i in range(1000):
     # p = pool.apply_async(gen_ins, (i,'synsmall',1000,1000,0.8,0.3,))  
     # p = pool.apply_async(gen_ins, (i,'synmid',5000,5000,0.8,0.1,))  
     # p = pool.apply_async(gen_ins, (i,'synxlarge',100000,100000,0.96,0.01,1.0,i,))  

@@ -28,7 +28,9 @@ net_width = int(config['net_width'])
 model_mode = int(config['model_mode'])
 mode = config['mode']
 use_dual = True
-
+extra = ''
+if 'extraid' in config:
+    extra = config['extraid']
 accum_loss = True
 if int(config['accum_loss'])==0:
     accum_loss = False
@@ -57,7 +59,7 @@ eta_opt=None
 # if 'eta_opt' in config:
 #     eta_opt = float(config['eta_opt'])
 
-ident = f'k{max_k}_{nlayer}'
+ident = extra+f'k{max_k}_{nlayer}'
 use_residual = None
 if max_k > 1:
     use_residual = max_k
@@ -188,6 +190,8 @@ with torch.no_grad():
         best_loss=checkpoint['best_loss']
         print(f'Last best val loss gen:  {best_loss}')
         print('Model Loaded')
+    else:
+        quit()
 
 
     with alive_bar(len(test_files),title=f"Validating part") as bar:

@@ -35,6 +35,12 @@ net_width = int(config['net_width'])
 model_mode = int(config['model_mode'])
 mode = config['mode']
 eta_opt = float(config['eta_opt'])
+if 'gpu' in config:
+    dev = int(config['gpu'])
+    if dev > 0:
+        device = torch.device(f"cuda:{dev}" if torch.cuda.is_available() else "cpu")
+    else:
+        device = torch.device("cpu")
 
 accum_loss = True
 if int(config['accum_loss'])==0:
@@ -50,6 +56,7 @@ if int(config['usedual']) == 0:
     use_dual = False
 
 
+use_residual = None
 Contu = False
 if int(config['Contu'])==1:
     Contu = True
@@ -66,6 +73,9 @@ ident = f'k{max_k}_{nlayer}_supervised'
 # type_modef = 'linf'
 type_modef = 'l2'
 
+div = 1.0
+if 'div' in config:
+    div = float(config['div'])
 
 if model_mode == 0:
     m = PDQP_Net_shared(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,type=type_modef).to(device)
@@ -73,11 +83,13 @@ elif model_mode == 1:
     m = PDQP_Net_AR(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,type=type_modef,use_dual=use_dual).to(device)
     ident += '_AR'
 elif model_mode == 2:
-    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual,eta_opt=eta_opt).to(device)
+    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual,eta_opt=eta_opt,div=div, use_residual = use_residual).to(device)
     ident += '_ARgeq'
 elif model_mode == 3:
-    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual,eta_opt=eta_opt,mode=0).to(device)
+    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual,eta_opt=eta_opt,div=div,mode=0, use_residual=use_residual).to(device)
     ident += '_ARgeq'
+    if max_k > 1:
+        ident += f'_maxk{max_k}'
 
     
 
@@ -95,8 +107,10 @@ modf = relKKT_real()
 
 train_tar_dir = '../pkl/train'
 valid_tar_dir = '../pkl/valid'
-train_files = os.listdir(train_tar_dir)
-valid_files = os.listdir(valid_tar_dir)
+# train_files = os.listdir(train_tar_dir)
+# valid_files = os.listdir(valid_tar_dir)
+train_files = []
+valid_files = []
 
 
 if mode == 'single':

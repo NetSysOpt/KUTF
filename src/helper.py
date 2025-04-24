@@ -336,14 +336,13 @@ def extract_solfile_scaled(fnm):
     fnm = fnm.replace('/gen_train_cont','/train')
     tsp = fnm.split('/')
     fnm='/'.join([tsp[0],tsp[1],'train',tsp[3]])
-    print(fnm,'!!!!!!!!!!')
+    print(fnm,' UNDER CONSTRUCTION')
     
     
     n=0
     m=0
     
     ff = open(fnm,'r')
-    print('    File Opened!!!!!!!!!!')
     mode = 'N'
     counter = 0
 
@@ -351,59 +350,49 @@ def extract_solfile_scaled(fnm):
     for line in ff:
         line = line.replace('\n','')
         if line == 'Q':
-            print(line,'SS')
             mode = 'Q'
             Q = np.zeros((n,n))
             continue
         elif line == 'A':
-            print(line)
             mode = 'A'
             A = np.zeros((m,n))
             continue
         elif line == 'c':
-            print(line)
             mode = 'c'
             c = np.zeros((n,))
             counter = 0
             continue
         elif line == 'b':
-            print(line)
             mode = 'b'
             b = np.zeros((m,))
             counter = 0
             continue
         elif line == 'vscale':
-            print(line)
             mode = 'vscale'
             vscale = np.zeros((n,))
             counter = 0
             continue
         elif line == 'cscale':
-            print(line)
             mode = 'cscale'
             cscale = np.zeros((m,))
             counter = 0
             continue
         elif line == 'constscale':
-            print(line)
             mode = 'constscale'
             constscale = np.zeros((1,))
             counter = 0
             continue
         elif line == 'l':
-            print(line)
             mode = 'l'
             var_lb = np.zeros((n,))
             counter = 0
             continue
         elif line == 'u':
-            print(line)
             mode = 'u'
             var_ub = np.zeros((n,))
             counter = 0
             continue
         elif line == 'numEquation':
-            print(line)
             mode = 'numEquation'
             cons_ident = np.zeros((m,))
             continue
@@ -479,7 +468,6 @@ def extract_solfile_scaled(fnm):
                      
     ff.close()    
     
-    print('!!!!!!!!!!!!!!!!!!!!')
     # for i in range(A.shape[0]):
     #     b[i] = -b[i]
     #     if cons_ident[i] > 0.5:
@@ -544,6 +532,7 @@ def extract_solfile_scaled(fnm):
     
     # print(x)
         
+    print(fnm,' finished')
     return v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident
 
 
@@ -571,14 +560,13 @@ def extract_solfile_scaled_sparse(fnm):
     fnm = fnm.replace('/gen_train_cont','/train')
     tsp = fnm.split('/')
     fnm='/'.join([tsp[0],tsp[1],'train',tsp[3]])
-    print(fnm,'!!!!!!!!!!')
+    print(fnm,'UNDER CONSTRUCTION')
     
     
     n=0
     m=0
     
     ff = open(fnm,'r')
-    print('    File Opened!!!!!!!!!!')
     mode = 'N'
     counter = 0
 
@@ -590,57 +578,47 @@ def extract_solfile_scaled_sparse(fnm):
     for line in ff:
         line = line.replace('\n','')
         if line == 'Q':
-            print(line,'SS')
             mode = 'Q'
             continue
         elif line == 'A':
-            print(line)
             mode = 'A'
             continue
         elif line == 'c':
-            print(line)
             mode = 'c'
             c = np.zeros((n,))
             counter = 0
             continue
         elif line == 'b':
-            print(line)
             mode = 'b'
             b = np.zeros((m,))
             counter = 0
             continue
         elif line == 'vscale':
-            print(line)
             mode = 'vscale'
             vscale = np.zeros((n,))
             counter = 0
             continue
         elif line == 'cscale':
-            print(line)
             mode = 'cscale'
             cscale = np.zeros((m,))
             counter = 0
             continue
         elif line == 'constscale':
-            print(line)
             mode = 'constscale'
             constscale = np.zeros((1,))
             counter = 0
             continue
         elif line == 'l':
-            print(line)
             mode = 'l'
             var_lb = np.zeros((n,))
             counter = 0
             continue
         elif line == 'u':
-            print(line)
             mode = 'u'
             var_ub = np.zeros((n,))
             counter = 0
             continue
         elif line == 'numEquation':
-            print(line)
             mode = 'numEquation'
             cons_ident = np.zeros((m,))
             continue
@@ -721,7 +699,6 @@ def extract_solfile_scaled_sparse(fnm):
                      
     ff.close()    
     
-    print('!!!!!!!!!!!!!!!!!!!!')
     # for i in range(A.shape[0]):
     #     b[i] = -b[i]
     #     if cons_ident[i] > 0.5:
@@ -773,7 +750,7 @@ def extract_solfile_scaled_sparse(fnm):
             ll+=1
         ff.close()
 
-
+    print(fnm,'Finished')
     return v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident
 
 
@@ -1037,18 +1014,16 @@ def extract_solfile_unscaled_sparse(fnm):
     vars_ident_u = None
     cons_ident = None
 
-    print(fnm,'???????????')
     fnm = fnm.replace('/ins','/ori_ins')
     fnm = fnm.replace('/gen_train_cont','/train')
     tsp = fnm.split('/')
     fnm='/'.join([tsp[0],tsp[1],'train',tsp[3]])
-    print(fnm,'!!!!!!!!!!')
+    print(fnm,'UNDER CONSTRUCTION unscale')
     
     n=0
     m=0
     
     ff = open(fnm,'r')
-    print('    File Opened!!!!!!!!!!')
     mode = 'N'
     counter = 0
 
@@ -1060,57 +1035,47 @@ def extract_solfile_unscaled_sparse(fnm):
     for line in ff:
         line = line.replace('\n','')
         if line == 'Q':
-            print(line,'SS')
             mode = 'Q'
             continue
         elif line == 'A':
-            print(line)
             mode = 'A'
             continue
         elif line == 'c':
-            print(line)
             mode = 'c'
             c = np.zeros((n,))
             counter = 0
             continue
         elif line == 'b':
-            print(line)
             mode = 'b'
             b = np.zeros((m,))
             counter = 0
             continue
         elif line == 'vscale':
-            print(line)
             mode = 'vscale'
             vscale = np.zeros((n,))
             counter = 0
             continue
         elif line == 'cscale':
-            print(line)
             mode = 'cscale'
             cscale = np.zeros((m,))
             counter = 0
             continue
         elif line == 'constscale':
-            print(line)
             mode = 'constscale'
             constscale = np.zeros((1,))
             counter = 0
             continue
         elif line == 'l':
-            print(line)
             mode = 'l'
             var_lb = np.zeros((n,))
             counter = 0
             continue
         elif line == 'u':
-            print(line)
             mode = 'u'
             var_ub = np.zeros((n,))
             counter = 0
             continue
         elif line == 'numEquation':
-            print(line)
             mode = 'numEquation'
             cons_ident = np.zeros((m,))
             continue
@@ -1191,7 +1156,6 @@ def extract_solfile_unscaled_sparse(fnm):
                      
     ff.close()    
     
-    print('!!!!!!!!!!!!!!!!!!!!')
     # for i in range(A.shape[0]):
     #     b[i] = -b[i]
     #     if cons_ident[i] > 0.5:
@@ -1244,6 +1208,7 @@ def extract_solfile_unscaled_sparse(fnm):
         ff.close()
 
 
+    print(fnm,'Finished unscaled')
     return v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident
 
 
@@ -1265,12 +1230,12 @@ def getConfig(ident=''):
         reading=False
     for line in f:
         if ident!='':
-            if ident in line:
-                if  'end' in line:
-                    break
-                else:
+            if ident == line[:len(ident)]:
                     reading = True
+            if f'end {ident}' == line[:len(ident)+4]:
+                break
         if reading:
+            print(line)
             if '=' not in line or line[0]=='#':
                 continue
             line = line.replace('\n','').replace(' ','').split('=')
@@ -1379,7 +1344,7 @@ def valid(m,valid_files,epoch,valid_tar_dir,pareto,device,modf,autoregression_it
                     avg_scgap[itr] += gaps.item()
 
                     loss = scs
-                    # loss = (itr*loss)/autoregression_iteration
+                    loss = (itr*loss)/autoregression_iteration
                     loss_num = scs.item()
                     avg_valid_loss[itr] += loss_num
 
@@ -1789,10 +1754,12 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
             avg_histx = None
             avg_histy = None
             for itr in range(autoregression_iteration):
+                if not accu_loss:
+                    optimizer.zero_grad()
                 print(Fore.GREEN + f'{itr} {var_feat.shape}'+Style.RESET_ALL)
                 if avg_histx is not None:
-                    var_feat = avg_histx
-                    con_feat = avg_histy
+                    var_feat = avg_histx.detach()
+                    con_feat = avg_histy.detach()
                 if not accu_loss:
                     optimizer.zero_grad()
                 x_pred,y_pred,scs_all,mult,avg_histx,avg_histy = m(AT,A,Q,b,c,var_feat,con_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
@@ -1857,9 +1824,10 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
                         net_loss = loss*((itr+1)/autoregression_iteration)
                     else:
                         net_loss = net_loss+loss*((itr+1)/autoregression_iteration)
-                # else:
-                #     loss.backward()
-                #     # optimizer.step()
+                else:
+                    loss *=((itr+1)/autoregression_iteration)
+                    loss.backward()
+                    optimizer.step()
 
                 var_feat = x_pred.detach().clone()
                 con_feat = y_pred.detach().clone()
@@ -1882,13 +1850,13 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
                 optimizer.step()
             else:
                 print(f'{fnm}   avg_loss: {round(loss.item(),4)}        {round(pr_it,4)}   ---   {round(du_it,4)}   ---   {round(gp_it,4)}')
-                loss.backward()
-                if check_grad:
-                    for name, param in m.named_parameters():
-                        print(param.grad,name)
-                        input()
-                    quit()
-                optimizer.step()
+                # loss.backward()
+                # if check_grad:
+                #     for name, param in m.named_parameters():
+                #         print(param.grad,name)
+                #         input()
+                #     quit()
+                # optimizer.step()
 
             # print(f'Auto regression finished')
             # input()
@@ -2006,7 +1974,7 @@ def valid_supervised(m,valid_files,epoch,valid_tar_dir,device,modf,autoregressio
 
                 for itr in range(autoregression_iteration):
                     # x_pred,y_pred,scs_all,mult = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub)
-                    x_pred,y_pred,scs_all,mult = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
+                    x_pred,y_pred,scs_all,mult,avg_histx,avg_histy = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
                                                     AT_ori,A_ori,Q_ori,b_ori,c_ori,vscale,cscale,constscale,var_lb_ori,var_ub_ori)
 
                     bqual_ori = b_ori.squeeze(-1).to(device)
@@ -2113,7 +2081,7 @@ def train_supervised(m,train_files,epoch,train_tar_dir,device,optimizer,choose_w
                 if not accu_loss:
                     optimizer.zero_grad()
                 # x_pred,y_pred,scs_all,mult = m(AT,A,Q,b,c,var_feat,con_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub)
-                x_pred,y_pred,scs_all,mult = m(AT,A,Q,b,c,var_feat,con_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
+                x_pred,y_pred,scs_all,mult,avg_histx,avg_histy = m(AT,A,Q,b,c,var_feat,con_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
                                                    AT_ori,A_ori,Q_ori,b_ori,c_ori,vscale,cscale,constscale,var_lb_ori,var_ub_ori)
                 # print(x_pred)
                 pr_it = scs_all[1].item()
@@ -2167,3 +2135,39 @@ def train_supervised(m,train_files,epoch,train_tar_dir,device,optimizer,choose_w
             bar()
 
     return avg_train_loss
+
+
+
+def extract_one(folder_in, folder_out, fnm):
+    v_feat, c_feat, Q, A, c, b, x, y, vscale, cscale, constscale, var_lb, var_ub, vars_ident_l, vars_ident_u, cons_ident = extract_solfile_scaled_sparse(f'{folder_in}/{fnm}')
+    _, _, Q_ori, A_ori, c_ori, b_ori, x_ori, y_ori, vscale_ori, cscale_ori, constscale_ori, var_lb_ori, var_ub_ori, vars_ident_l_ori, vars_ident_u_ori, cons_ident_ori = extract_solfile_unscaled_sparse(f'{folder_in}/{fnm}')
+
+    to_pack = {}
+    to_pack['vf'] = v_feat
+    to_pack['cf'] = c_feat
+    to_pack['Q'] = Q.float()
+    to_pack['A'] = A.float()
+    to_pack['c'] = torch.as_tensor(c).float()
+    to_pack['b'] = torch.as_tensor(b).float()
+    to_pack['Q_ori'] = Q_ori.float()
+    to_pack['A_ori'] = A_ori.float()
+    to_pack['c_ori'] = torch.as_tensor(c_ori).float()
+    to_pack['b_ori'] = torch.as_tensor(b_ori).float()
+
+    to_pack['x'] = x
+    to_pack['y'] = y
+
+    to_pack['vscale'] = torch.as_tensor(vscale).float()
+    to_pack['cscale'] =  torch.as_tensor(cscale).float()
+    to_pack['constscale'] =  torch.as_tensor(constscale).float()
+
+    to_pack['var_lb'] = var_lb
+    to_pack['var_ub'] = var_ub
+    to_pack['var_lb_ori'] = var_lb_ori
+    to_pack['var_ub_ori'] = var_ub_ori
+    to_pack['vars_ident_l'] = vars_ident_l
+    to_pack['vars_ident_u'] = vars_ident_u
+    to_pack['cons_ident'] = cons_ident
+    f_tar = gzip.open(f'{folder_out}/{fnm}.pkl','wb')
+    pickle.dump(to_pack,f_tar)
+    f_tar.close()

@@ -24,6 +24,7 @@ import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--type','-t', type=str, default='8785_test')
 parser.add_argument('--ori','-o', type=int, default=0)
+parser.add_argument('--ex','-e', type=str, default='')
 args = parser.parse_args()
 
 
@@ -95,7 +96,7 @@ elif mode == 'qplib':
 
 else:
     if 'test' not in mode:
-        modifier = '--checkiter=10  --tolerance=1e-4'
+        modifier = '--checkiter=10  --tolerance=1e-5'
         print('!!!!!! free mode for data')
         f=open(f'run_data.bat','w')
         flist = os.listdir(f'../../../ins/gen_train_{mode}/')
@@ -149,8 +150,8 @@ else:
             modifier2 = '--checkiter=5 --tolerance=1e-5'
         if 'mm' in mode:
             choose=0
-            modifier = '--checkiter=5 --tolerance=1e-5'
-            modifier2 = '--checkiter=5 --tolerance=1e-5'
+            modifier = '--checkiter=5 --tolerance=1e-4'
+            modifier2 = '--checkiter=5 --tolerance=1e-4'
         mode = mode.replace('test_','').replace('_test','')
         f=open(f'run_test.bat','w')
         flist = os.listdir(f'../../../pkl/{mode}_test/')
@@ -169,7 +170,7 @@ else:
                 # pw=''
                 fdir = f'../../../ins/gen_train_{mode}/{fnm}'
                 st = 'julia scripts/solve_warmstart.jl'
-                st = f'{st} --instance_path={fdir} --output_directory=../../logs/warmstart --time_sec_limit={tl} {modifier}{pw}'
+                st = f'{st} --instance_path={fdir} --output_directory=../../logs/warmstart{args.ex} --time_sec_limit={tl} {modifier}{pw}'
                 # st = f'{st} --instance_path={fdir} --output_directory=../../logs/warmstart --time_sec_limit=3600 --checkiter=100{modifier}'
                 print(st)
                 f.write(st+'\n')

@@ -7,6 +7,7 @@ import gzip
 import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--type','-t', type=str, default='')
+parser.add_argument('--ex','-e', type=str, default='')
 args = parser.parse_args()
 
 
@@ -61,11 +62,11 @@ for fnm in ori_files:
     file_map[fnm][0][1] = tttm
     file_map[fnm][0][2] = tprimal
 
-wms_files1 = os.listdir('./warmstart')
+wms_files1 = os.listdir(f'./warmstart{args.ex}')
 
-to_process = [x for x in wms_files1 if os.path.isdir(f'./warmstart/{x}')]
+to_process = [x for x in wms_files1 if os.path.isdir(f'./warmstart{args.ex}/{x}')]
 
-folder_names = ['warmstart']
+folder_names = ['warmstart{args.ex}']
 
 ntypes = 2
 
@@ -78,7 +79,7 @@ for fnm in wms_files:
     if fnm not in file_map:
         file_map[fnm] = []
     file_map[fnm].append([-1,-1,-1,-1,-1,-1])
-    logs = read_json(f'./warmstart/{fnm2}')
+    logs = read_json(f'./warmstart{args.ex}/{fnm2}')
     if logs is None:
         continue
     # print(logs.keys())
@@ -124,7 +125,7 @@ for fnm in wms_files:
 ntypes = 2
 
 
-f = open('res.csv','w')
+f = open(f'res{args.ex}.csv','w')
 st = f'ins ori_time '
 # st = f'ins ori_time ori_iter '
 for ff in folder_names:

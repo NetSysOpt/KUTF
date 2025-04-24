@@ -12,6 +12,8 @@ import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--type','-t', type=str, default='')
 parser.add_argument('--sl','-s', type=int, default=0)
+parser.add_argument('--maxepoch','-m', type=int, default=100000)
+
 args = parser.parse_args()
 
 device = torch.device(f"cuda:0" if torch.cuda.is_available() else "cpu")
@@ -35,6 +37,9 @@ lr1 = float(config['lr'])
 net_width = int(config['net_width'])
 model_mode = int(config['model_mode'])
 mode = config['mode']
+extra = ''
+if 'extraid' in config:
+    extra = config['extraid']
 
 eta_opt = None
 if "eta_opt" in config:
@@ -78,7 +83,7 @@ if int(config['choose_weight'])==1:
 # m = PDQP_Net_AR(1,1,128,max_k = max_k, threshold = 1e-8,nlayer=2,type='linf').to(device)
 m = None
 
-ident = f'k{max_k}_{nlayer}'
+ident = extra+f'k{max_k}_{nlayer}'
 
 type_modef = 'linf'
 type_modef = 'l2'
@@ -198,7 +203,7 @@ else:
 loss_func = torch.nn.MSELoss()
 # optimizer = torch.optim.SGD(m.parameters(), lr=lr1)
 optimizer = torch.optim.AdamW(m.parameters(), lr=lr1)
-max_epoch = 1000000
+max_epoch = args.maxepoch
 best_loss = 1e+20
 flog = open('../logs/training_log.log','w')
 last_epoch=0
@@ -218,8 +223,8 @@ if os.path.exists(f"../model/best_pdqp{ident}.mdl") and Contu:
     print(f'loaded: ../model/best_pdqp{ident}.mdl\nLast best val loss gen:  {best_loss}')
     print('Model Loaded'+f"../model/best_pdqp{ident}.mdl")
     loaded=True
-
 save_log = True
+f_gg = None
 if args.sl == 0:
     save_log = False
 if save_log:
@@ -285,4 +290,5 @@ for epoch in range(last_epoch,max_epoch):
 
 
 flog.close()
-f_gg.close()
+if f_gg is not None:
+    f_gg.close()
