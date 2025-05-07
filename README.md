@@ -1,4 +1,4 @@
-# PDQP-Net
+# PDQP-Net (Still improving)
 
 ## Introduction
 
@@ -18,6 +18,7 @@ To generate datasets, you can use the script ./ins/src/gen_ins.py. The code prov
 
 ### Sample Collection
 After generating instances, you can use ./src/julia/PDQP.jl/gen_bat.py to generate a task file that collects training/testing samples from generated cases. The code provides detailed usage instructions.
+Then, please run ./src/extract_sample.py -t XXX to extract pickle files. (XXXX is the dataset name. For example, if you have gen_train_XXXX in your ins folder, you will use -t XXXX.)
 
 ### Training
 Using ./src/train_new.py to train the unsupervised model, ./src/train_supervised.py to train the supervised model, and ./src/train_gnn.py for the mentioned GNNs model.
