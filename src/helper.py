@@ -9,6 +9,8 @@ from alive_progress import alive_bar
 from model import compute_weight_grad
 from colorama import Fore, Back, Style
 import matplotlib.pyplot as plt
+from model import r_gap_general
+
 
 def extract(fnm):
     # return params
@@ -1322,7 +1324,7 @@ def valid(m,valid_files,epoch,valid_tar_dir,pareto,device,modf,autoregression_it
                     if avg_histx is not None:
                         v_feat = avg_histx
                         c_feat = avg_histy
-                    print(Fore.RED + f'{itr} {v_feat.shape}'+Style.RESET_ALL)
+                    # print(Fore.RED + f'{itr} {v_feat.shape}'+Style.RESET_ALL)
                     x_pred,y_pred,scs_all,mult,avg_histx,avg_histy = m(AT,A,Q,b,c,v_feat,c_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub, 
                                                    AT_ori,A_ori,Q_ori,b_ori,c_ori,vscale,cscale,constscale,var_lb_ori,var_ub_ori)
 
@@ -1753,10 +1755,12 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
                 optimizer.zero_grad()
             avg_histx = None
             avg_histy = None
+
+            # input()
             for itr in range(autoregression_iteration):
                 if not accu_loss:
                     optimizer.zero_grad()
-                print(Fore.GREEN + f'{itr} {var_feat.shape}'+Style.RESET_ALL)
+                # print(Fore.GREEN + f'{itr} {var_feat.shape}'+Style.RESET_ALL)
                 if avg_histx is not None:
                     var_feat = avg_histx.detach()
                     con_feat = avg_histy.detach()
@@ -1764,9 +1768,17 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
                     optimizer.zero_grad()
                 x_pred,y_pred,scs_all,mult,avg_histx,avg_histy = m(AT,A,Q,b,c,var_feat,con_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
                                                         AT_ori,A_ori,Q_ori,b_ori,c_ori,vscale,cscale,constscale,var_lb_ori,var_ub_ori)
-                pr_it = scs_all[1].item()
-                du_it = scs_all[2].item()
-                gp_it = scs_all[3].item()
+
+                pr = scs_all[1]
+                du = scs_all[2]
+                gp = scs_all[3]
+
+                pr_it = pr.item()
+                du_it = du.item()
+                gp_it = gp.item()
+
+
+
 
                 loss = None
                 # pareto front
@@ -1806,6 +1818,9 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
                 if not pareto:
                     loss = scs
 
+                # loss = pr/pr_it + du/du_it + gp/gp_it
+                # loss = torch.max(pr,torch.max(gp,du))
+                print(Fore.GREEN + f'    {itr} {round(pr_it,4)} {round(du_it,4)} {round(gp_it,4)}  ==>  {otm}'+Style.RESET_ALL)
 
                 # loss = (itr*loss)/autoregression_iteration
                 loss_num = scs.item()
@@ -1836,9 +1851,9 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
 
                 # print(f'Auto-regression on {fnm}, iteration {itr} loss:{loss_num}')
             nm=torch.norm(x_pred,float('inf'))
-            print(f'x linf norm: {nm}')
+            # print(f'x linf norm: {nm}')
             nm=torch.norm(y_pred,float('inf'))
-            print(f'y linf norm: {nm}')
+            # print(f'y linf norm: {nm}')
             if accu_loss:
                 print(f'{fnm}   avg_loss: {round(net_loss.item()/autoregression_iteration,4)}         {round(pr_it,4)}   ---   {round(du_it,4)}   ---   {round(gp_it,4)}')
                 net_loss.backward()
@@ -2005,10 +2020,12 @@ def valid_supervised(m,valid_files,epoch,valid_tar_dir,device,modf,autoregressio
                 bar()
     return avg_valid_loss, avg_sc, avg_scprimal, avg_scdual, avg_scgap
 
-def train_supervised(m,train_files,epoch,train_tar_dir,device,optimizer,choose_weight,autoregression_iteration,accu_loss):
+def train_supervised(m,train_files,epoch,train_tar_dir,device,optimizer,choose_weight,autoregression_iteration,accu_loss,add_gap_pen=False):
     avg_train_loss = [0.0]*autoregression_iteration
 
     loss_func = torch.nn.MSELoss()
+
+    gap_e = r_gap_general(eta_opt=None)
 
     random.shuffle(train_files)
     with alive_bar(len(train_files),title=f"Training epoch {epoch}") as bar:
@@ -2088,6 +2105,8 @@ def train_supervised(m,train_files,epoch,train_tar_dir,device,optimizer,choose_w
                 du_it = scs_all[2].item()
                 gp_it = scs_all[3].item()
                 loss = loss_func(x_pred, x) + loss_func(y_pred, y)
+                if add_gap_pen:
+                    loss += gap_e(Q,A,AT,b,c,x_pred,y_pred,cons_ident, vars_ident_l, vars_ident_u,var_lb,var_ub)
 
                 loss_num = loss.item()
                 avg_train_loss[itr] += loss_num
@@ -2105,9 +2124,9 @@ def train_supervised(m,train_files,epoch,train_tar_dir,device,optimizer,choose_w
                         net_loss = loss
                     else:
                         net_loss = net_loss+loss
-                # else:
-                #     loss.backward()
-                #     # optimizer.step()
+                else:
+                    loss.backward()
+                    optimizer.step()
 
                 var_feat = x_pred.detach().clone()
                 con_feat = y_pred.detach().clone()
@@ -2124,13 +2143,13 @@ def train_supervised(m,train_files,epoch,train_tar_dir,device,optimizer,choose_w
                 optimizer.step()
             else:
                 print(f'{fnm}   avg_loss: {round(loss.item(),4)}        {round(pr_it,4)}   ---   {round(du_it,4)}   ---   {round(gp_it,4)}')
-                loss.backward()
-                if check_grad:
-                    for name, param in m.named_parameters():
-                        print(param.grad,name)
-                        input()
-                    quit()
-                optimizer.step()
+                # loss.backward()
+                # if check_grad:
+                #     for name, param in m.named_parameters():
+                #         print(param.grad,name)
+                #         input()
+                #     quit()
+                # optimizer.step()
 
             bar()
 

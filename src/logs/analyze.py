@@ -163,6 +163,8 @@ n_ent = -1
 for fnm in keys:
     n_ent = max(len(file_map[fnm]), n_ent)
 avg_time = [0]*n_ent
+avg_iter = [0]*n_ent
+wins = [0]*n_ent
 
 
 processed = 0
@@ -174,6 +176,8 @@ for fnm in keys:
     st = f'{fnm} {file_map[fnm][0][1]} '
     # st += f'{file_map[fnm][0][0]} '
     flag = False
+    if file_map[fnm][0][1] > 100:
+        continue
     for idx in range(1,len(file_map[fnm])):
         ent = file_map[fnm][idx]
         # time
@@ -190,6 +194,7 @@ for fnm in keys:
 
         print(file_map[fnm][idx])
         avg_time[idx] += file_map[fnm][idx][1]
+        avg_iter[idx] += file_map[fnm][idx][0]
 
         ratio1 = (file_map[fnm][0][0] - file_map[fnm][idx][0])/(file_map[fnm][0][0]+1e-8)
         all_rats2[idx] +=ratio1
@@ -205,6 +210,11 @@ for fnm in keys:
 
     if not flag:
         avg_time[0] += file_map[fnm][0][1]
+        avg_iter[0] += file_map[fnm][0][0]
+        if file_map[fnm][0][0] < file_map[fnm][idx][0]:
+            wins[0]+=1
+        else:
+            wins[idx]+=1
         st+='\n'
         f.write(st)
 
@@ -231,6 +241,28 @@ for idx in range(len(all_rats2)):
     val = (avg_time[0] - avg_time[idx])/avg_time[0]
     val = round(val * 100.0, 4)
     st += f'{val}% '
+st+='\n'
+f.write(st)
+
+
+st = f'totalIter '
+for idx in range(len(all_rats2)):
+    st += f'{avg_iter[idx]} '
+st+='\n'
+f.write(st)
+
+st = f'Improv. '
+for idx in range(len(all_rats2)):
+    val = (avg_iter[0] - avg_iter[idx])/avg_iter[0]
+    val = round(val * 100.0, 4)
+    st += f'{val}% '
+st+='\n'
+f.write(st)
+
+
+st = f'wins '
+for idx in range(len(all_rats2)):
+    st += f'{wins[idx]} '
 st+='\n'
 f.write(st)
 

@@ -24,8 +24,11 @@ import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--type','-t', type=str, default='')
 parser.add_argument('--sl','-s', type=int, default=0)
+parser.add_argument('--maxepoch','-m', type=int, default=100)
 args = parser.parse_args()
 
+
+max_epoch = args.maxepoch
 
 config = getConfig(args.type)
 max_k = int(config['max_k'])
@@ -35,6 +38,12 @@ net_width = int(config['net_width'])
 model_mode = int(config['model_mode'])
 mode = config['mode']
 eta_opt = float(config['eta_opt'])
+if 'gpu' in config:
+    dev = int(config['gpu'])
+    if dev > 0:
+        device = torch.device(f"cuda:{dev}" if torch.cuda.is_available() else "cpu")
+    else:
+        device = torch.device("cpu")
 
 accum_loss = True
 if int(config['accum_loss'])==0:
@@ -86,8 +95,6 @@ modf = relKKT_real()
 
 train_tar_dir = '../pkl/train'
 valid_tar_dir = '../pkl/valid'
-train_files = os.listdir(train_tar_dir)
-valid_files = os.listdir(valid_tar_dir)
 
 
 if mode == 'single':
@@ -163,9 +170,10 @@ else:
 
 loss_func = torch.nn.MSELoss()
 optimizer = torch.optim.Adam(m.parameters(), lr=lr1)
-max_epoch = 1000000
 best_loss = 1e+20
-flog = open('../logs/training_log.log','w')
+if not os.path.exists(f'../logs/training'):
+    os.mkdir(f'../logs/training')
+flog = open(f'../logs/training/train_log_gnn_{ident}.log','w')
 last_epoch=0
 
 if accum_loss:

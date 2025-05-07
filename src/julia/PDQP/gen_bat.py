@@ -23,8 +23,10 @@ mode = 'synlarge'
 import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--type','-t', type=str, default='8785_test')
+parser.add_argument('--timelim','-m', type=int, default=100)
 parser.add_argument('--ori','-o', type=int, default=0)
 parser.add_argument('--ex','-e', type=str, default='')
+
 args = parser.parse_args()
 
 
@@ -116,7 +118,7 @@ else:
         # modifier = ''
 
         # modifier2 = ''
-        tl = 600.0
+        tl = args.timelim
         choose=1
         modifier = '--checkiter=5 --tolerance=1e-6'
         modifier2 = '--checkiter=5 --tolerance=1e-6'
@@ -163,6 +165,7 @@ else:
                     pw=''
                 else:
                     pw = min(get_pw(fnm,choose),10.0)
+                    pw = max(pw,0.01)
                     # pw = pw*1.5
                     # pw = 1.8
                     pw =f' --primal_weight={pw}'

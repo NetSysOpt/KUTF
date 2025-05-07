@@ -24,7 +24,11 @@ import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--type','-t', type=str, default='')
 parser.add_argument('--sl','-s', type=int, default=0)
+parser.add_argument('--maxepoch','-m', type=int, default=100)
 args = parser.parse_args()
+
+
+max_epoch = args.maxepoch
 
 
 config = getConfig(args.type)
@@ -186,9 +190,8 @@ else:
 
 loss_func = torch.nn.MSELoss()
 optimizer = torch.optim.Adam(m.parameters(), lr=lr1)
-max_epoch = 1000000
 best_loss = 1e+20
-flog = open('../logs/training_log.log','w')
+flog = open(f'../logs/training/train_log_sup_{ident}.log','w')
 last_epoch=0
 
 if accum_loss:

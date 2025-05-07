@@ -40,6 +40,13 @@ mode = config['mode']
 extra = ''
 if 'extraid' in config:
     extra = config['extraid']
+no_valid = False
+if 'novalid' in config:
+    no_valid = True
+use_norm = True
+if 'norm' in config:
+    if int(config['norm']) != 1:
+        use_norm = False
 
 eta_opt = None
 if "eta_opt" in config:
@@ -51,7 +58,10 @@ if 'gpu' in config:
         device = torch.device(f"cuda:{dev}" if torch.cuda.is_available() else "cpu")
     else:
         device = torch.device("cpu")
-
+summation=False
+if 'summation' in config:
+    if int(config['summation'])>0:
+        summation=True
 
 
 div = 1.0
@@ -98,13 +108,17 @@ elif model_mode == 1:
     m = PDQP_Net_AR(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,type=type_modef,use_dual=use_dual).to(device)
     ident += '_AR'
 elif model_mode == 2:
-    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual,eta_opt=eta_opt,div=div, use_residual = use_residual).to(device)
+    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual,eta_opt=eta_opt,norm=use_norm,div=div, use_residual = use_residual).to(device)
     ident += '_ARgeq'
 elif model_mode == 3:
-    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual,eta_opt=eta_opt,div=div,mode=0, use_residual=use_residual).to(device)
+    m = PDQP_Net_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual,eta_opt=eta_opt,norm=use_norm,div=div,mode=0, use_residual=use_residual).to(device)
     ident += '_ARgeq'
     if max_k > 1:
         ident += f'_maxk{max_k}'
+elif model_mode == 4:
+    # GNN
+    m = GNN_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual).to(device)
+    ident += '_GNN'
 
     
 
@@ -198,6 +212,13 @@ else:
             train_files.append(train_files[0])
     ident += f'_{mode}'
 
+if no_valid:
+    train_files = train_files + valid_files
+    valid_files = []
+    for fv in valid_files:
+        valid_files.append(fv)
+
+
 # train_files = train_files[:3]
 
 loss_func = torch.nn.MSELoss()
@@ -205,7 +226,7 @@ loss_func = torch.nn.MSELoss()
 optimizer = torch.optim.AdamW(m.parameters(), lr=lr1)
 max_epoch = args.maxepoch
 best_loss = 1e+20
-flog = open('../logs/training_log.log','w')
+flog = open(f'../logs/training/train_log_{ident}.log','w')
 last_epoch=0
 
 if accum_loss:

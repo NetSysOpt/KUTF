@@ -59,6 +59,7 @@ eta_opt=None
 # if 'eta_opt' in config:
 #     eta_opt = float(config['eta_opt'])
 
+
 ident = extra+f'k{max_k}_{nlayer}'
 use_residual = None
 if max_k > 1:
@@ -77,6 +78,9 @@ elif model_mode == 3:
     ident += '_ARgeq'
     if max_k > 1:
         ident += f'_maxk{max_k}'
+
+print(sum(p.numel() for p in m.parameters() if p.requires_grad))
+# quit()
 
 # modf = relKKT_real()
 modf = relKKT_general(mode = 'linf',eta_opt = eta_opt)

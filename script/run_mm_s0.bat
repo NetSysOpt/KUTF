@@ -1,6 +1,5 @@
 cd ../src;
-python reshufflepkl.py -t mm -s 1;
-python train_new.py -t mm1 -m 200;
-python reshufflepkl.py -t mm -s 2;
-python train_new.py -t mm2 -m 200;
+python train_new.py -t mmk4 -m 300;
+python train_new.py -t mmk16 -m 300;
+python train_new.py -t mmk32 -m 300;
 cd ../script

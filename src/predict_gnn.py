@@ -28,6 +28,12 @@ net_width = int(config['net_width'])
 model_mode = int(config['model_mode'])
 mode = config['mode']
 use_dual = True
+if 'gpu' in config:
+    dev = int(config['gpu'])
+    if dev > 0:
+        device = torch.device(f"cuda:{dev}" if torch.cuda.is_available() else "cpu")
+    else:
+        device = torch.device("cpu")
 
 accum_loss = True
 if int(config['accum_loss'])==0:
@@ -57,6 +63,10 @@ type_modef = 'l2'
 m = GNN_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual).to(device)
 ident += '_GNN'
 
+
+print(sum(p.numel() for p in m.parameters() if p.requires_grad))
+
+
 modf = relKKT_real()
 # modf = relKKT_general(type_modef)
 
@@ -71,8 +81,6 @@ with torch.no_grad():
 
     train_tar_dir = '../pkl/train'
     valid_tar_dir = '../pkl/valid'
-    train_files = os.listdir(train_tar_dir)
-    valid_files = os.listdir(valid_tar_dir)
 
     # mode = 'cont'
     # mode = 'cont_temp'
@@ -136,7 +144,7 @@ with torch.no_grad():
     else:
         mode1 = mode.replace('qplib_','')
         train_tar_dir = f'../pkl/{mode1}_train'
-        valid_tar_dir = f'../pkl/{mode1}_valid'
+        valid_tar_dir = f'../pkl/{mode1}_test'
         train_files = os.listdir(train_tar_dir)
         valid_files = os.listdir(valid_tar_dir)
         if len(valid_files) == 0:
