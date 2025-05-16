@@ -358,11 +358,11 @@ end 3708
 
 
 mm
-max_k = 8
+max_k = 1
 nlayer = 2
 net_width = 128
-lr = 1e-4
-Contu = 1
+lr = 1e-5
+Contu = 0
 choose_weight = 0
 model_mode = 3
 mode = mm
@@ -397,11 +397,11 @@ end mm4
 
 
 mm3
-max_k = 8
+max_k = 1
 nlayer = 2
 net_width = 128
 lr = 1e-5
-Contu = 1
+Contu = 0
 choose_weight = 0
 model_mode = 3
 mode = mm
@@ -649,8 +649,8 @@ mmk32_t100
 max_k = 32
 nlayer = 2
 net_width = 128
-lr = 1e-5
-Contu = 0
+lr = 1e-4
+Contu = 1
 choose_weight = 0
 model_mode = 3
 mode = mm
@@ -665,3 +665,339 @@ norm=0
 summation=0
 extraid=no_eta_seed3_noaccum_nosum
 end mmk32_t100
+
+
+
+
+
+mm_gnnk4
+max_k = 4
+nlayer = 2
+net_width = 128
+lr = 1e-5
+Contu = 0
+choose_weight = 0
+model_mode = 4
+mode = mm
+usedual = 1 
+pareto = 0
+draw = 1
+accum_loss = 0
+inf_time = 4
+gpu=-1
+eta_opt = -1
+norm=0
+summation=0
+extraid=no_eta_seed3_noaccum_nosum_gnn
+end mm_gnnk4
+
+
+mm_gnnk8
+max_k = 8
+nlayer = 2
+net_width = 128
+lr = 1e-5
+Contu = 0
+choose_weight = 0
+model_mode = 4
+mode = mm
+usedual = 1 
+pareto = 0
+draw = 1
+accum_loss = 0
+inf_time = 8
+gpu=-1
+eta_opt = -1
+norm=0
+summation=0
+extraid=no_eta_seed3_noaccum_nosum_gnn
+end mm_gnnk8
+
+
+
+mm_gnnk1
+max_k = 1
+nlayer = 2
+net_width = 128
+lr = 1e-5
+Contu = 0
+choose_weight = 0
+model_mode = 4
+mode = mm
+usedual = 1 
+pareto = 0
+draw = 1
+accum_loss = 0
+inf_time = 1
+gpu=-1
+eta_opt = -1
+norm=0
+summation=0
+extraid=no_eta_seed3_noaccum_nosum_gnn
+end mm_gnnk1
+
+
+
+
+
+mm_gnnk1_sum
+max_k = 1
+nlayer = 2
+net_width = 128
+lr = 2e-6
+Contu = 0
+choose_weight = 0
+model_mode = 4
+mode = mm
+usedual = 1 
+pareto = 0
+draw = 1
+accum_loss = 0
+inf_time = 1
+gpu=-1
+eta_opt = -1
+norm=0
+summation=0
+extraid=no_eta_seed3_noaccum_nosum_gnn
+end mm_gnnk1_sum
+
+mm_gnnk1_best
+max_k = 1
+nlayer = 2
+net_width = 128
+lr = 5e-6
+Contu = 0
+choose_weight = 0
+model_mode = 4
+mode = mm
+usedual = 1 
+pareto = 0
+draw = 1
+accum_loss = 0
+inf_time = 1
+gpu=-1
+eta_opt = -1
+norm=0
+summation=0
+extraid=no_eta_seed3_noaccum_nosum_gnn
+end mm_gnnk1_best
+
+
+
+mm_gnn_sup
+max_k = 1
+nlayer = 2
+net_width = 128
+lr = 2e-6
+Contu = 0
+choose_weight = 0
+model_mode = 4
+mode = mm
+usedual = 1 
+pareto = 0
+draw = 1
+accum_loss = 0
+inf_time = 1
+gpu=-1
+eta_opt = -1
+norm=0
+summation=0
+extraid=no_eta_seed3_noaccum_nosum_gnn
+end mm_gnn_sup
+
+
+
+
+
+
+
+
+mm_unroll
+max_k = 1
+nlayer = 2
+net_width = 128
+lr = 1e-5
+Contu = 0
+choose_weight = 0
+model_mode = 3
+mode = mm
+usedual = 1 
+pareto = 0
+draw = 1
+accum_loss = 0
+inf_time = 1
+gpu=-1
+eta_opt = -1
+norm=0
+summation=0
+extraid=no_eta_seed3_noaccum_nosum_gnn
+end mm_unroll
+
+
+
+
+netlib_gnnk1
+max_k = 1
+nlayer = 4
+net_width = 128
+lr = 1e-6
+Contu = 0
+choose_weight = 0
+model_mode = 4
+mode = netlib
+usedual = 1 
+pareto = 0
+draw = 1
+accum_loss = 0
+inf_time = 1
+gpu=-1
+eta_opt = -1
+norm=0
+summation=0
+extraid=no_eta_seed3_noaccum_nosum_gnn
+type_modef=l2
+end netlib_gnnk1
+
+
+netlib_gnnk2
+max_k = 1
+nlayer = 4
+net_width = 128
+lr = 1e-7
+Contu = 0
+choose_weight = 0
+model_mode = 4
+mode = netlib
+usedual = 1 
+pareto = 0
+draw = 1
+accum_loss = 0
+inf_time = 1
+gpu=-1
+eta_opt = -1
+norm=0
+summation=0
+extraid=no_eta_seed3_noaccum_nosum_gnn
+type_modef=l2
+end netlib_gnnk2
+
+netlib_gnnk3
+max_k = 1
+nlayer = 4
+net_width = 128
+lr = 1e-8
+Contu = 0
+choose_weight = 0
+model_mode = 4
+mode = netlib
+usedual = 1 
+pareto = 0
+draw = 1
+accum_loss = 0
+inf_time = 1
+gpu=-1
+eta_opt = -1
+norm=0
+summation=0
+extraid=no_eta_seed3_noaccum_nosum_gnn
+type_modef=l2
+end netlib_gnnk3
+
+
+
+netlib_gnnk8
+max_k = 8
+nlayer = 2
+net_width = 128
+lr = 2e-4
+Contu = 0
+choose_weight = 0
+model_mode = 4
+mode = netlib
+usedual = 1 
+pareto = 0
+draw = 1
+accum_loss = 0
+inf_time = 8
+gpu=-1
+eta_opt = -1
+norm=0
+summation=0
+extraid=no_eta_seed3_noaccum_nosum_gnn
+end netlib_gnnk8
+
+
+
+
+
+
+netlib_gnn_sup
+max_k = 1
+nlayer = 2
+net_width = 128
+lr = 1e-3
+Contu = 0
+choose_weight = 0
+model_mode = 4
+mode = netlib
+usedual = 1 
+pareto = 0
+draw = 1
+accum_loss = 0
+inf_time = 1
+gpu=-1
+eta_opt = -1
+norm=0
+summation=0
+extraid=no_eta_seed3_noaccum_nosum_gnn
+end netlib_gnn_sup
+
+
+
+
+
+rlp_gnnk1
+max_k = 1
+nlayer = 2
+net_width = 128
+lr = 2e-4
+Contu = 0
+choose_weight = 0
+model_mode = 4
+mode = lplarge
+usedual = 1 
+pareto = 0
+draw = 1
+accum_loss = 0
+inf_time = 1
+gpu=-1
+eta_opt = -1
+norm=0
+summation=0
+extraid=no_eta_seed3_noaccum_nosum_gnn
+end rlp_gnnk1
+
+
+
+
+
+netlib_rlp
+max_k = 1
+nlayer = 2
+net_width = 128
+lr = 2e-4
+Contu = 0
+choose_weight = 0
+model_mode = 4
+mode = netlib
+usedual = 1 
+pareto = 0
+draw = 1
+accum_loss = 0
+inf_time = 1
+gpu=-1
+eta_opt = -1
+norm=0
+summation=0
+extraid=no_eta_seed3_noaccum_nosum_gnn
+end netlib_rlp

@@ -47,7 +47,6 @@ for fnm in ori_files:
     if fnm not in file_map:
         file_map[fnm] = []
     file_map[fnm].append([-1,-1,-1,-1,-1,-1])
-    print(f'{ori_log}/{fnm}')
     logs = read_json(f'{ori_log}/{fnm}')
 
     if logs is None:
@@ -70,9 +69,9 @@ folder_names = ['warmstart{args.ex}']
 
 ntypes = 2
 
+
 wms_files = [x for x in wms_files1 if '.gz'  in x]
 for fnm in wms_files:
-    print(fnm)
     fnm = fnm.replace('.gz','')
     fnm2 = fnm+'.gz'
     fnm = fnm.replace('_full_log','_summary')
@@ -122,6 +121,8 @@ for fnm in wms_files:
 #         file_map[fnm][-1][0] = itnm
 #         file_map[fnm][-1][1] = tttm
 
+
+
 ntypes = 2
 
 
@@ -148,14 +149,19 @@ for fnm in file_map:
     keys.append(fnm)
 keys.sort()
 
-if filters=='mm':
-    tars_sums = os.listdir('/home/lxyang/git/pdqpnet/pkl/mm_test')
-    keys = [x.replace('.QPS.pkl','_summary.json').replace('.mps.pkl','_summary.json') for x in tars_sums]
-elif len(filters)!=0:
-    keys_new = []
-    for ft in filters:
-        keys_new += [x for x in keys if ft in x]
-    keys = keys_new
+# if filters=='mm':
+# tars_sums = os.listdir(f'/home/lxyang/git/pdqpnet/pkl/{filters}_test')
+# keys = [x.replace('.QPS.pkl','_summary.json').replace('.mps.pkl','_summary.json') for x in tars_sums]
+# el
+# if len(filters)!=0:
+#     keys_new = []
+#     for ft in filters:
+#         keys_new += [x for x in keys if ft in x]
+#     keys = keys_new
+# print(keys_new,filters)
+
+keys = [x.replace('_full_log.json.gz','_summary.json') for x in wms_files]
+
 
 
 ops=[0,0,0]
@@ -170,14 +176,14 @@ wins = [0]*n_ent
 processed = 0
 for fnm in keys:
 
-    print(fnm,file_map[fnm])
+    print('++++++++',fnm,file_map[fnm])
     if len(file_map[fnm])<2:
         continue
     st = f'{fnm} {file_map[fnm][0][1]} '
     # st += f'{file_map[fnm][0][0]} '
     flag = False
-    if file_map[fnm][0][1] > 100:
-        continue
+    # if file_map[fnm][idx][1] > 100:
+    #     continue
     for idx in range(1,len(file_map[fnm])):
         ent = file_map[fnm][idx]
         # time
@@ -192,7 +198,7 @@ for fnm in keys:
         ratio2 = (file_map[fnm][0][0] - file_map[fnm][idx][0])/(file_map[fnm][0][0]+1e-8)
         st += f'{file_map[fnm][0][0]} {file_map[fnm][idx][0]} {round(ratio2*100,2)}% '
 
-        print(file_map[fnm][idx])
+        # print(file_map[fnm][idx])
         avg_time[idx] += file_map[fnm][idx][1]
         avg_iter[idx] += file_map[fnm][idx][0]
 

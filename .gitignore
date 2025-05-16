@@ -12,3 +12,4 @@ ins/mm
 ins/gen_train*
 plots/*
 model/*
+logs_*

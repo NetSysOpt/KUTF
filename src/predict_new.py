@@ -11,6 +11,7 @@ parser.add_argument('--type','-t', type=str, default='')
 args = parser.parse_args()
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 # max_k = 100
 # m = PDQP_Net_AR(1,1,64,max_k = max_k, threshold = 1e-4,nlayer=1).to(device)
 # max_k = 20
@@ -78,6 +79,11 @@ elif model_mode == 3:
     ident += '_ARgeq'
     if max_k > 1:
         ident += f'_maxk{max_k}'
+elif model_mode == 4:
+    # GNN
+    m = GNN_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype="linf",use_dual=use_dual).to(device)
+    ident += '_GNN'
+
 
 print(sum(p.numel() for p in m.parameters() if p.requires_grad))
 # quit()
@@ -186,6 +192,7 @@ with torch.no_grad():
     if accum_loss:
         ident+='_accLoss'
     last_epoch=0
+    print(f"../model/best_pdqp{ident}.mdl")
     if os.path.exists(f"../model/best_pdqp{ident}.mdl"):
         checkpoint = torch.load(f"../model/best_pdqp{ident}.mdl")
         m.load_state_dict(checkpoint['model'])

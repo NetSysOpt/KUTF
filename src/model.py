@@ -1510,7 +1510,7 @@ class r_primal_general(torch.nn.Module):
 
         Ax = torch.sparse.mm(A,x)
         cons_vio = b.unsqueeze(-1) - Ax
-        cons_vio = torch.abs(cons_vio + torch.mul(self.relu(-cons_vio),Iy))
+        cons_vio = cons_vio + torch.mul(self.relu(-cons_vio),Iy)
         var_vio = torch.mul(self.relu(l-x), il) + torch.mul(self.relu(x-u), iu)
         part_2 = torch.linalg.vector_norm(torch.cat((var_vio,cons_vio),0),self.mode)
         if self.norm:
@@ -1763,7 +1763,7 @@ class relKKT_general(torch.nn.Module):
 
 class GNN_AR_geq(torch.nn.Module):
     def __init__(self,x_size,y_size,feat_size,max_k = 20, threshold = 1e-8,nlayer=1, 
-                 tfype='linf', use_dual=True, eta_opt = 1e+6, div=4.0):
+                 tfype='linf', use_dual=True, eta_opt = 1e+6, div=4.0, summation=False, norm = False):
         super(GNN_AR_geq,self).__init__()
         self.max_k = max_k
         self.threshold = threshold
@@ -1771,8 +1771,9 @@ class GNN_AR_geq(torch.nn.Module):
         x_size = 5
         y_size = 2
 
-        self.qual_func = relKKT_general(tfype,eta_opt,True)
+        # self.qual_func = relKKT_general(tfype,eta_opt,True)
         
+        self.qual_func = relKKT_general(tfype,eta_opt,norm,summation = summation)
         
         
         self.x_emb = nn.Sequential(
@@ -1803,6 +1804,8 @@ class GNN_AR_geq(torch.nn.Module):
             nn.ReLU(),
             nn.Linear(feat_size,1),
         )
+
+        self.apply(init_weights)
 
     def forward(self,AT,A,Q,b,c,x,y,indicator_y,indicator_x_l,indicator_x_u,l,u,
                                 AT_ori=None,A_ori=None,Q_ori=None,b_ori=None,c_ori=None,vscale=None,cscale=None,constscale=None,var_lb_ori=None,var_ub_ori=None):

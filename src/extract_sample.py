@@ -25,6 +25,8 @@ train_ori_dir = '../ins/train'
 valid_ori_dir = '../ins/valid'
 
 
+rat_1 = 0.85
+rat_2 = 0.05
 
 mode = ''
 # mode = 'single'
@@ -177,15 +179,16 @@ else:
         os.remove(f"{test_tar_dir}/{fi}")
         
         
+
 failed = 0
 
 failed_ins = []
 
 instances = train_files
 n_files = len(instances)
-train_files = instances[:int(round(n_files*0.8))]
-valid_files = instances[int(round(n_files*0.8)):int(round(n_files*0.85))]
-test_files = instances[int(round(n_files*0.85)):]
+train_files = instances[:int(round(n_files*rat_1))]
+valid_files = instances[int(round(n_files*rat_1)):int(round(n_files*(rat_1+rat_2)))]
+test_files = instances[int(round(n_files*(rat_1+rat_2))):]
 
 print('   train|   valid|    test')
 print(f'{len(train_files):<8}|{len(valid_files):<8}|{len(test_files):<8}')

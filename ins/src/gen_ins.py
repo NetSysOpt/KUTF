@@ -715,7 +715,7 @@ import time
 
 
 def gen_ins(indx = 0, identifier='syn',n=5000,m=5000,sat=0.9,
-            density=0.1,ub=1.0,seed=0
+            density=0.1,ub=1.0,seed=0,use_q=True
             ):
     np.random.seed(seed)
     random.seed(seed)
@@ -729,10 +729,12 @@ def gen_ins(indx = 0, identifier='syn',n=5000,m=5000,sat=0.9,
     # add vars
     v_time = time.time()
     l_coeff = np.random.normal(size=(n),loc=3,scale=1).tolist()
-    q_coeff = np.random.normal(size=(n),loc=4,scale=2).tolist()
-    for i in range(n):
-        if q_coeff[i]<0.1:
-            q_coeff[i] = 0.1
+    if use_q:
+        q_coeff = np.random.normal(size=(n),loc=4,scale=2).tolist()
+        for i in range(n):
+            if q_coeff[i]<0.1:
+                q_coeff[i] = 0.1
+        
     variables = []
     ubs_map = {}
     for i in range(n):
@@ -744,7 +746,12 @@ def gen_ins(indx = 0, identifier='syn',n=5000,m=5000,sat=0.9,
     print(f'var added, time: {time.time()-v_time}')
     # construct objective
     v_time = time.time()
-    model.setObjective(gp.quicksum(l_coeff[i]*variables[i]+q_coeff[i]*variables[i]*variables[i] for i in range(n)), gp.GRB.MINIMIZE)
+
+    if use_q:
+        model.setObjective(gp.quicksum(l_coeff[i]*variables[i]+q_coeff[i]*variables[i]*variables[i] for i in range(n)), gp.GRB.MINIMIZE)
+    else:
+        model.setObjective(gp.quicksum(l_coeff[i]*variables[i] for i in range(n)), gp.GRB.MINIMIZE)
+
     print(f'objective added, time: {time.time()-v_time}')
     # construct A
     v_time = time.time()
@@ -919,11 +926,12 @@ import multiprocessing
 nworker=6
 pool = multiprocessing.Pool(nworker)
     
-for i in range(1000):
+for i in range(200):
     # p = pool.apply_async(gen_ins, (i,'synsmall',1000,1000,0.8,0.3,))  
     # p = pool.apply_async(gen_ins, (i,'synmid',5000,5000,0.8,0.1,))  
     # p = pool.apply_async(gen_ins, (i,'synxlarge',100000,100000,0.96,0.01,1.0,i,))  
-    p = pool.apply_async(gen_ins, (i,'synxlarge',10000,10000,0.96,0.1,1.0,i,))  
+    # p = pool.apply_async(gen_ins, (i,'synxlarge',10000,10000,0.96,0.1,1.0,i,))  
+    p = pool.apply_async(gen_ins, (i,'lplarge',10000,10000,0.96,0.1,1.0,i,False))  
     # p = pool.apply_async(gen_svm, (i,'small',256,10000,0.15,))  
     # p = pool.apply_async(gen_svm, (i,'mid',512,50000,0.15,))  
     # p = pool.apply_async(gen_svm, (i,'large',1024,100000,0.15,))  

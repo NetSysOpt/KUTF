@@ -80,6 +80,10 @@ if int(config['draw']) == 0:
 use_dual = True
 if int(config['usedual']) == 0:
     use_dual = False
+type_modef = 'linf'
+type_modef = 'l2'
+if 'type_modef' in config:
+    type_modef = config['type_modef']
 
 
 Contu = False
@@ -95,8 +99,6 @@ m = None
 
 ident = extra+f'k{max_k}_{nlayer}'
 
-type_modef = 'linf'
-type_modef = 'l2'
 
 use_residual = None
 if max_k > 1:
@@ -117,7 +119,7 @@ elif model_mode == 3:
         ident += f'_maxk{max_k}'
 elif model_mode == 4:
     # GNN
-    m = GNN_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual).to(device)
+    m = GNN_AR_geq(1,1,net_width,max_k = 1, threshold = 1e-8,nlayer=nlayer,tfype=type_modef,use_dual=use_dual, eta_opt = eta_opt).to(device)
     ident += '_GNN'
 
     

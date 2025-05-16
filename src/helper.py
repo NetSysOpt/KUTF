@@ -1316,6 +1316,9 @@ def valid(m,valid_files,epoch,valid_tar_dir,pareto,device,modf,autoregression_it
                     
                 v_feat = torch.zeros((v_feat.shape[0],1),dtype=torch.float32).to(device)
                 c_feat = torch.zeros((c_feat.shape[0],1),dtype=torch.float32).to(device)
+                
+                if v_feat.shape[0] > 100000 or v_feat.shape[0] > 100000:
+                    continue
 
                 avg_histx = None
                 avg_histy = None
@@ -1440,6 +1443,29 @@ def inference(m,fnm,epoch,valid_tar_dir,pareto,device,modf,autoregression_iterat
     # in this version, use all 0 start
     v_feat = torch.zeros((v_feat.shape[0],1),dtype=torch.float32).to(device)
     c_feat = torch.zeros((c_feat.shape[0],1),dtype=torch.float32).to(device)
+    print(v_feat.shape[0], c_feat.shape[0])
+    if v_feat.shape[0] > 1500000:
+        ff = open(f'../predictions/primal_{fnm}.sol','w')
+        st=''
+        for xv in v_feat:
+            st = st+f'{xv.item()} '
+        st = st + '\n'
+        ff.write(st)
+        ff.close()
+        
+        ff = open(f'../predictions/dual_{fnm}.sol','w')
+        st=''
+        for xv in c_feat:
+            st = st+f'{xv.item()} '
+        st = st + '\n'
+        ff.write(st)
+        ff.close()
+        
+        ff = open(f'../predictions/primalweight_{fnm}.sol','w')
+        st = f'1.0 1.0 1.0\n'
+        ff.write(st)
+        ff.close()
+        return
 
         
     avg_histx = None
@@ -1749,6 +1775,9 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
             var_feat = torch.zeros((v_feats[0],1),dtype=torch.float32).to(device)
             con_feat = torch.zeros((c_feats[0],1),dtype=torch.float32).to(device)
             
+            print(var_feat.shape[0], con_feat.shape[0])
+            if var_feat.shape[0] > 100000 or con_feat.shape[0] > 100000:
+                continue
             
             if accu_loss:
                 net_loss = None
@@ -1764,6 +1793,7 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
                 if avg_histx is not None:
                     var_feat = avg_histx.detach()
                     con_feat = avg_histy.detach()
+
                 if not accu_loss:
                     optimizer.zero_grad()
                 x_pred,y_pred,scs_all,mult,avg_histx,avg_histy = m(AT,A,Q,b,c,var_feat,con_feat,cons_ident,vars_ident_l,vars_ident_u,var_lb,var_ub,
@@ -1985,6 +2015,9 @@ def valid_supervised(m,valid_files,epoch,valid_tar_dir,device,modf,autoregressio
                 v_feat = torch.zeros((v_feat.shape[0],1),dtype=torch.float32).to(device)
                 c_feat = torch.zeros((c_feat.shape[0],1),dtype=torch.float32).to(device)
 
+                if v_feat.shape[0] > 1500000:
+                    continue
+
 
 
                 for itr in range(autoregression_iteration):
@@ -2089,6 +2122,8 @@ def train_supervised(m,train_files,epoch,train_tar_dir,device,optimizer,choose_w
             var_feat = torch.zeros((v_feat.shape[0],1),dtype=torch.float32).to(device)
             con_feat = torch.zeros((c_feat.shape[0],1),dtype=torch.float32).to(device)
             
+            if var_feat.shape[0] > 500000 or con_feat.shape[0] > 500000:
+                continue
             
             if accu_loss:
                 net_loss = None
