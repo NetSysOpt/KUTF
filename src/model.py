@@ -1768,8 +1768,8 @@ class GNN_AR_geq(torch.nn.Module):
         self.max_k = max_k
         self.threshold = threshold
         
-        x_size = 5
-        y_size = 2
+        x_size = 5 + x_size
+        y_size = 2 + y_size
 
         # self.qual_func = relKKT_general(tfype,eta_opt,True)
         
@@ -1789,8 +1789,15 @@ class GNN_AR_geq(torch.nn.Module):
             nn.ReLU(),
         )
         
-        self.vtoc = GNN_layer(feat_size,feat_size,feat_size)
-        self.ctov = GNN_layer_withQ(feat_size,feat_size,feat_size)
+        # self.vtoc = GNN_layer(feat_size,feat_size,feat_size)
+        # self.ctov = GNN_layer_withQ(feat_size,feat_size,feat_size)
+
+
+        self.c_updates = nn.ModuleList()
+        self.v_updates = nn.ModuleList()
+        for indx in range(nlayer):
+            self.c_updates.append(GNN_layer(feat_size,feat_size,feat_size))
+            self.v_updates.append(GNN_layer_withQ(feat_size,feat_size,feat_size))
         
             
         self.output_module = nn.Sequential(
@@ -1805,6 +1812,7 @@ class GNN_AR_geq(torch.nn.Module):
             nn.Linear(feat_size,1),
         )
 
+
         self.apply(init_weights)
 
     def forward(self,AT,A,Q,b,c,x,y,indicator_y,indicator_x_l,indicator_x_u,l,u,
@@ -1817,16 +1825,21 @@ class GNN_AR_geq(torch.nn.Module):
         
         
         # extract feature for GNN
-        x = torch.cat((indicator_x_l,indicator_x_u,l,u,c),1)
+        x = torch.cat((indicator_x_l,indicator_x_u,l,u,c,x),1)
         if len(indicator_y.shape) == 1:
             indicator_y = indicator_y.unsqueeze(-1)
-        y = torch.cat((b,indicator_y),1)
+        y = torch.cat((b,indicator_y,y),1)
         
         x = self.x_emb(x)
         y = self.y_emb(y)
 
-        y = self.vtoc(y,x,Q,AT,A,c,b)
-        x = self.ctov(x,y,Q,A,AT,c,b)
+        # y = self.vtoc(y,x,Q,AT,A,c,b)
+        # x = self.ctov(x,y,Q,A,AT,c,b)
+
+
+        for index, layer in enumerate(self.c_updates):
+            y = self.c_updates[index](y,x,Q,AT,A,c,b)
+            x = self.v_updates[index](x,y,Q,A,AT,c,b)
         
         x = self.output_module(x)
         y = self.output_module_y(y)
