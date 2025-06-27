@@ -220,7 +220,6 @@ if no_valid:
     for fv in valid_files:
         valid_files.append(fv)
 
-
 # train_files = train_files[:3]
 
 loss_func = torch.nn.MSELoss()
@@ -238,6 +237,7 @@ loss_log = open(f'../logs/train_{mode}.log','a+')
 
 loaded = False
 if os.path.exists(f"../model/best_pdqp{ident}.mdl") and Contu:
+    
     checkpoint = torch.load(f"../model/best_pdqp{ident}.mdl")
     m.load_state_dict(checkpoint['model'])
     if 'nepoch' in checkpoint:

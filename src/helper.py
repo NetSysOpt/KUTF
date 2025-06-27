@@ -1709,15 +1709,126 @@ def sol_check_model(fdir,device,modf,model):
     return x,y,ttloss,prim_res,dual_res,gaps,x_norm,y_norm
 
 
+def readpkl(to_pack,device):
+
+    data_seg = {}
+    data_seg['v_feats'] = to_pack['vf'].shape
+    data_seg['c_feats'] = to_pack['cf'].shape
+    data_seg['Q'] = to_pack['Q'].to(device)
+    data_seg['A'] = to_pack['A'].to(device)
+    data_seg['AT'] = torch.transpose(data_seg['A'],0,1)
+    data_seg['c'] = to_pack['c'].to(device)
+    data_seg['b'] = to_pack['b'].to(device)
+    data_seg['c'] = torch.unsqueeze(data_seg['c'],-1)
+    data_seg['b'] = torch.unsqueeze(data_seg['b'],-1)
+
+
+
+    data_seg['Q_ori'] = to_pack['Q_ori'].to(device)
+    data_seg['A_ori'] = to_pack['A_ori'].to(device)
+    data_seg['AT_ori'] = torch.transpose(data_seg['A_ori'],0,1)
+    data_seg['c_ori'] = to_pack['c_ori'].to(device)
+    data_seg['b_ori'] = to_pack['b_ori'].to(device)
+    data_seg['c_ori'] = torch.unsqueeze(data_seg['c_ori'],-1)
+    # print(c_ori)
+    # quit()
+    data_seg['b_ori'] = torch.unsqueeze(data_seg['b_ori'],-1)
+    data_seg['var_lb_ori'] = torch.as_tensor(to_pack['var_lb_ori'], dtype=torch.float32).to(device)
+    data_seg['var_ub_ori'] = torch.as_tensor(to_pack['var_ub_ori'], dtype=torch.float32).to(device)
+
+
+    data_seg['vscale'] = torch.as_tensor(to_pack['vscale']).to(device).unsqueeze(-1)
+    data_seg['cscale'] = torch.as_tensor(to_pack['cscale'] ).to(device).unsqueeze(-1)
+    data_seg['constscale'] = torch.as_tensor(to_pack['constscale']).to(device).unsqueeze(-1)
+    data_seg['cons_ident'] = torch.as_tensor(to_pack['cons_ident'], dtype=torch.float32).to(device)
+    data_seg['vars_ident_l'] = torch.as_tensor(to_pack['vars_ident_l'], dtype=torch.float32).to(device)
+    data_seg['vars_ident_u'] = torch.as_tensor(to_pack['vars_ident_u'], dtype=torch.float32).to(device)
+    data_seg['var_lb'] = torch.as_tensor(to_pack['var_lb'], dtype=torch.float32).to(device)
+    data_seg['var_ub'] = torch.as_tensor(to_pack['var_ub'], dtype=torch.float32).to(device)
+
+    
+    return data_seg
+
+def extract_seg(data_seg):
+
+    v_feats = data_seg['v_feats'].shape
+    c_feats = data_seg['c_feats'].shape
+    Q = data_seg['Q']
+    A = data_seg['A']
+    AT = data_seg['AT']
+    c = data_seg['c']
+    b = data_seg['b']
+
+    Q_ori = data_seg['Q_ori']
+    A_ori = data_seg['A_ori']
+    AT_ori = data_seg['AT_ori']
+    c_ori = data_seg['c_ori']
+    b_ori = data_seg['b_ori']
+    
+    var_lb_ori = data_seg['var_lb_ori']
+    var_ub_ori = data_seg['var_ub_ori']
+
+
+    vscale = data_seg['vscale']
+    cscale = data_seg['cscale']
+    constscale = data_seg['constscale']
+    cons_ident = data_seg['cons_ident']
+    vars_ident_l = data_seg['vars_ident_l']
+    vars_ident_u = data_seg['vars_ident_u']
+    var_lb = data_seg['var_lb']
+    var_ub = data_seg['var_ub']
+
+
 check_grad=False
 # check_grad=True
 def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weight,autoregression_iteration,accu_loss,cur_best):
-    avg_train_loss = [0.0]*autoregression_iteration
     random.shuffle(train_files)
+    # train_pkls = []
+    # with alive_bar(len(train_files),title=f"Reading files........") as bar:
+    #     for fnm in train_files:
+    #         # input()
+    #         mems = torch.cuda.memory_allocated()
+    #         f_tar = gzip.open(f'{train_tar_dir}/{fnm}','rb')
+    #         to_pack = pickle.load(f_tar)
+    #         data_seg = readpkl(to_pack,device)
+    #         train_pkls.append(data_seg)
+    #         f_tar.close()
+    #         bar()
+    avg_train_loss = [0.0]*autoregression_iteration
     with alive_bar(len(train_files),title=f"Training epoch {epoch}........ Current Best: {cur_best}") as bar:
-        for fnm in train_files:
+        for idx,fnm in enumerate(train_files):
             # input()
             mems = torch.cuda.memory_allocated()
+
+            # data_seg = train_pkls[idx]
+            # v_feats = data_seg['v_feats']
+            # c_feats = data_seg['c_feats']
+            # Q = data_seg['Q']
+            # A = data_seg['A']
+            # AT = data_seg['AT']
+            # c = data_seg['c']
+            # b = data_seg['b']
+
+            # Q_ori = data_seg['Q_ori']
+            # A_ori = data_seg['A_ori']
+            # AT_ori = data_seg['AT_ori']
+            # c_ori = data_seg['c_ori']
+            # b_ori = data_seg['b_ori']
+            
+            # var_lb_ori = data_seg['var_lb_ori']
+            # var_ub_ori = data_seg['var_ub_ori']
+
+
+            # vscale = data_seg['vscale']
+            # cscale = data_seg['cscale']
+            # constscale = data_seg['constscale']
+            # cons_ident = data_seg['cons_ident']
+            # vars_ident_l = data_seg['vars_ident_l']
+            # vars_ident_u = data_seg['vars_ident_u']
+            # var_lb = data_seg['var_lb']
+            # var_ub = data_seg['var_ub']
+
+
             f_tar = gzip.open(f'{train_tar_dir}/{fnm}','rb')
             to_pack = pickle.load(f_tar)
             v_feats = to_pack['vf'].shape
@@ -1791,8 +1902,8 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
                     optimizer.zero_grad()
                 # print(Fore.GREEN + f'{itr} {var_feat.shape}'+Style.RESET_ALL)
                 if avg_histx is not None:
-                    var_feat = avg_histx.detach()
-                    con_feat = avg_histy.detach()
+                    var_feat = avg_histx.detach().clone()
+                    con_feat = avg_histy.detach().clone()
 
                 if not accu_loss:
                     optimizer.zero_grad()
@@ -1874,8 +1985,8 @@ def train(m,train_files,epoch,train_tar_dir,pareto,device,optimizer,choose_weigh
                     loss.backward()
                     optimizer.step()
 
-                var_feat = x_pred.detach().clone()
-                con_feat = y_pred.detach().clone()
+                # var_feat = x_pred.detach().clone()
+                # con_feat = y_pred.detach().clone()
 
                 
 
